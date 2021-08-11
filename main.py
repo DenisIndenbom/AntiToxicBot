@@ -4,7 +4,10 @@ from telebot.types import Message, User
 from nltk.tokenize import WordPunctTokenizer
 from navec import Navec
 
-from textTonalityClassifier import RulesClassifier, CBClassifier
+from textTonalityClassifier import RulesClassifier, TextClassifierNN
+
+from torch import load as load_nn
+from torch import device
 
 import numpy as np
 
@@ -13,7 +16,7 @@ import copy
 
 import config
 
-from token import telegram_token
+from telegramBotAPIToken import telegram_token
 
 bot = telebot.TeleBot(token=telegram_token)
 
@@ -21,7 +24,8 @@ navec_model = Navec.load("navec_hudlit_v1_12B_500K_300d_100q.tar")
 
 tokenizer = WordPunctTokenizer()
 
-cb_model = CBClassifier('ToxicClassifier.model')
+model = TextClassifierNN(519, 300, 512, 256, 2, navec_model)
+model.load_state_dict(load_nn("TextClassifierNN.nn",map_location=device('cpu')))
 
 rules_clf = RulesClassifier(config.bad_words)
 
@@ -40,7 +44,7 @@ def get_text_embedding(words, word_model):
 def check_is_toxic(text):
     tokenized_data = tokenizer.tokenize(text.lower())
     x = get_text_embedding(tokenized_data, navec_model)
-    y1 = cb_model.predict(x)
+    y1 = model.predict(x).argmax()
     y2 = rules_clf.predict([tokenized_data])[0].tolist()
     return bool(y1) or bool(y2)
 

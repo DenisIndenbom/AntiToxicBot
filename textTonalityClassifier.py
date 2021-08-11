@@ -59,7 +59,7 @@ class CBClassifier:
 
 class TextClassifierNN(torch.nn.Module):
 
-    def __init__(self, input_size, embedding_dim, gru_hidden_size, fc_hidden_size, output_size, navec):
+    def __init__(self, input_size=519, embedding_dim=300, gru_hidden_size=256, fc_hidden_size=512, output_size=2, navec=None):
         super(TextClassifierNN, self).__init__()
 
         self.relu = torch.nn.ReLU()
