@@ -13,15 +13,18 @@ import copy
 
 import config
 
-bot = telebot.TeleBot(token=config.token)
+from token import telegram_token
+
+bot = telebot.TeleBot(token=telegram_token)
+
+navec_model = Navec.load("navec_hudlit_v1_12B_500K_300d_100q.tar")
+
+tokenizer = WordPunctTokenizer()
 
 cb_model = CBClassifier('ToxicClassifier.model')
 
 rules_clf = RulesClassifier(config.bad_words)
 
-navec_model = Navec.load("navec_hudlit_v1_12B_500K_300d_100q.tar")
-
-tokenizer = WordPunctTokenizer()
 
 
 def get_text_embedding(words, word_model):
