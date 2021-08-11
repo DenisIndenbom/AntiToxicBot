@@ -15,6 +15,15 @@ class RulesClassifier:
         :param bad_words: list of bad words
         """
         self.list_of_bad_words = bad_words
+    @staticmethod
+    def clear_text(text: str):
+        bad_symbols = [",", "!", ":", "/", ".", "|", "(", ")", "-", "_", "?", ";"]
+        clear_text = ''
+
+        for symbol in text:
+            if symbol not in bad_symbols:
+                clear_text += symbol
+        return clear_text
 
     def predict(self, x: list):
         """
@@ -26,12 +35,10 @@ class RulesClassifier:
         for row in x:
             in_list = False
             for word in row:
-                #print(word)
-                #process.extractOne()
-                #if word in self.list_of_bad_words:
-                #    in_list = True
-                #    break
-                if process.extractOne(word,self.list_of_bad_words)[1] > 75:
+                clear_word = self.clear_text(word)
+                if clear_word == '':
+                    continue
+                if process.extractOne(clear_word, self.list_of_bad_words)[1] > 75:
                     in_list = True
                     break
             if in_list:
@@ -59,7 +66,7 @@ class CBClassifier:
 
 class TextClassifierNN(torch.nn.Module):
 
-    def __init__(self, input_size=519, embedding_dim=300, gru_hidden_size=256, fc_hidden_size=512, output_size=2, navec=None):
+    def __init__(self, embedding_dim, gru_hidden_size, fc_hidden_size, output_size, navec):
         super(TextClassifierNN, self).__init__()
 
         self.relu = torch.nn.ReLU()
@@ -70,13 +77,13 @@ class TextClassifierNN(torch.nn.Module):
 
         self.embedding = NavecEmbedding(navec)  # torch.nn.Embedding(input_size, embedding_dim)
 
-        self.conv1 = torch.nn.Conv1d(embedding_dim, 512, kernel_size=3, padding=1)
+        self.conv1 = torch.nn.Conv1d(300, 512, kernel_size=3, padding=1)
         self.conv2 = torch.nn.Conv1d(512, 1024, kernel_size=5, padding=2)
         self.conv3 = torch.nn.Conv1d(1024, 2048, kernel_size=3, padding=1)
 
         self.gru = torch.nn.GRU(2048, gru_hidden_size, batch_first=True)
 
-        self.fc1 = torch.nn.Linear(gru_hidden_size * input_size, fc_hidden_size)
+        self.fc1 = torch.nn.Linear(gru_hidden_size, fc_hidden_size)
 
         self.fc2 = torch.nn.Linear(fc_hidden_size, output_size)
 
@@ -99,9 +106,7 @@ class TextClassifierNN(torch.nn.Module):
 
         x = x.permute((0, 2, 1))
 
-        x = self.gru(x)[0]  # (seql, batch_size, hidden_size)
-
-        x = self.flatten(x)
+        x = self.gru(x)[0].mean(dim=1)  # (batch_size, L, hidden_size)
 
         x = self.fc1(x)
 

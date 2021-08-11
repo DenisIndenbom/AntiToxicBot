@@ -4,10 +4,11 @@ from telebot.types import Message, User
 from nltk.tokenize import WordPunctTokenizer
 from navec import Navec
 
-from textTonalityClassifier import RulesClassifier, TextClassifierNN
+from textTonalityClassifier import RulesClassifier, TextClassifierNN, CatBoostClassifier
 
 from torch import load as load_nn
-from torch import device
+from torch import device, LongTensor, unsqueeze
+
 
 import numpy as np
 
@@ -24,12 +25,32 @@ navec_model = Navec.load("navec_hudlit_v1_12B_500K_300d_100q.tar")
 
 tokenizer = WordPunctTokenizer()
 
-model = TextClassifierNN(519, 300, 512, 256, 2, navec_model)
-model.load_state_dict(load_nn("TextClassifierNN.nn",map_location=device('cpu')))
+if config.NN_mode:
+    model = TextClassifierNN(519, 300, 512, 256, 2, navec_model)
+    model.load_state_dict(load_nn("TextClassifierNN.nn",map_location=device('cpu')))
+else:
+    model = CatBoostClassifier()
+    model.load_model('ToxicClassifier.model', format='cbm')
 
 rules_clf = RulesClassifier(config.bad_words)
 
 
+def get_text_indexes(words, word_model):
+    indexes = []
+
+    for word in words:
+        try:
+          indexes.append(word_model.vocab[word])
+        except KeyError:
+          indexes.append(0)
+
+    return np.array(indexes, dtype=np.int64)
+
+def add_zero_indexes(ind, max_text_ind_len):
+    if len(ind) < max_text_ind_len:
+        z_arr = np.zeros((max_text_ind_len - len(ind)),dtype=np.int64).T
+        ind = np.concatenate((ind,z_arr),axis=0)
+    return ind
 
 def get_text_embedding(words, word_model):
     # get text embedding, simply averaging embeddings of words in it
@@ -43,8 +64,15 @@ def get_text_embedding(words, word_model):
 
 def check_is_toxic(text):
     tokenized_data = tokenizer.tokenize(text.lower())
-    x = get_text_embedding(tokenized_data, navec_model)
-    y1 = model.predict(x).argmax()
+    if config.NN_mode:
+        x = get_text_indexes(tokenized_data,navec_model)
+        x = LongTensor(x)
+        x = x.unsqueeze(0)
+        y1 = model.predict(x).argmax()
+    else:
+        x = get_text_embedding(tokenized_data, navec_model)
+        y1 = model.predict(x)
+
     y2 = rules_clf.predict([tokenized_data])[0].tolist()
     return bool(y1) or bool(y2)
 
@@ -290,4 +318,4 @@ def moderate(message: Message):
     # save user data
     save_data(data, 'users.json')
 
-bot.polling(none_stop=True, timeout=100)
+bot.polling(none_stop=True, timeout=0)
