@@ -7,7 +7,8 @@ from navec import Navec
 from textTonalityClassifier import RulesClassifier, TextClassifierNN, CatBoostClassifier
 
 from torch import load as load_nn
-from torch import device, LongTensor, unsqueeze
+from torch import device as torch_device
+from torch import LongTensor, cuda
 
 
 import numpy as np
@@ -26,8 +27,10 @@ navec_model = Navec.load("navec_hudlit_v1_12B_500K_300d_100q.tar")
 tokenizer = WordPunctTokenizer()
 
 if config.NN_mode:
-    model = TextClassifierNN(519, 300, 512, 256, 2, navec_model)
-    model.load_state_dict(load_nn("TextClassifierNN.nn",map_location=device('cpu')))
+    model = TextClassifierNN(300, 512, 256, 2, navec_model)
+    model.load_state_dict(load_nn("TextClassifierNN.nn",map_location=torch_device('cpu')))
+    device = torch_device('cuda:0' if config.GPU_mode and cuda.is_available() else 'cpu')
+    model.to(device)
 else:
     model = CatBoostClassifier()
     model.load_model('ToxicClassifier.model', format='cbm')
@@ -64,17 +67,20 @@ def get_text_embedding(words, word_model):
 
 def check_is_toxic(text):
     tokenized_data = tokenizer.tokenize(text.lower())
+
+    if bool(rules_clf.predict([tokenized_data])[0].tolist()):
+        return True
+
     if config.NN_mode:
         x = get_text_indexes(tokenized_data,navec_model)
         x = LongTensor(x)
         x = x.unsqueeze(0)
-        y1 = model.predict(x).argmax()
+        y = model.predict(x).argmax()
     else:
         x = get_text_embedding(tokenized_data, navec_model)
-        y1 = model.predict(x)
+        y = model.predict(x)
 
-    y2 = rules_clf.predict([tokenized_data])[0].tolist()
-    return bool(y1) or bool(y2)
+    return bool(y)
 
 def check_message_from_the_group(message: Message):
     if message.chat.type != 'group':
@@ -114,7 +120,7 @@ def help(message: Message):
 
 @bot.message_handler(commands=['github'])
 def github(message: Message):
-    bot.send_message(message.chat.id, 'Github - https://github.com/DenisIndenbom/')
+    bot.send_message(message.chat.id, 'Github - https://github.com/DenisIndenbom/AntiToxicBot')
 
 @bot.message_handler(commands=['add_chat'])
 def add_chat(message: Message):

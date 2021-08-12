@@ -71,9 +71,7 @@ class TextClassifierNN(torch.nn.Module):
 
         self.relu = torch.nn.ReLU()
 
-        self.softmax = torch.nn.Softmax()
-
-        self.flatten = torch.nn.Flatten()
+        self.softmax = torch.nn.Softmax(dim=1)
 
         self.embedding = NavecEmbedding(navec)  # torch.nn.Embedding(input_size, embedding_dim)
 

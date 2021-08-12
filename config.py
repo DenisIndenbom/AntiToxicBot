@@ -8,3 +8,5 @@ fine_for_toxic = 0.5
 reward_for_positive = 0.25
 
 NN_mode = True
+
+GPU_mode = False
