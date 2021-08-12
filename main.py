@@ -100,9 +100,6 @@ def save_data(data,path):
 
 @bot.message_handler(commands=['start'])
 def start(message: Message):
-    if message.chat.type == "group":
-        pass
-        #print(message.chat)
     bot.send_message(message.chat.id, 'Привет!\n'
                                       'Я анти токсик бот. Я против токсичных людей. '
                                       'Я буду банить их за чрезмерную токсичность.\n\n'
