@@ -248,8 +248,8 @@ def get_toxics(message: Message):
         bot.send_message(message.chat.id, 'Вашего чата нет в базе данныхю. Пропишите команду /add_chat')
         return
 
-    # if message.from_user.id not in data[chat_id]['admin_id']:
-    #     return
+    if message.from_user.id not in data[chat_id]['admin_id']:
+        return
 
     toxics = ''
     for i in range(len(data[chat_id]['user_id'])):
@@ -318,7 +318,7 @@ def moderate(message: Message):
 
         for admin_id in data[chat_id]['admin_id']:
             bot.send_message(admin_id, f'Warring: Пользователь @{user.username} {waring_text}')
-    elif config.toxic_threshold > data[chat_id]["rating"][index] and data[chat_id]['is_toxic'][index]:
+    elif data[chat_id]["rating"][index] > config.toxic_threshold and data[chat_id]['is_toxic'][index]:
         data[chat_id]['is_toxic'][index] = False
 
     # save user data
