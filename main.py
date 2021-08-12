@@ -29,6 +29,7 @@ tokenizer = WordPunctTokenizer()
 if config.NN_mode:
     model = TextClassifierNN(300, 512, 256, 2, navec_model)
     model.load_state_dict(load_nn("TextClassifierNN.nn",map_location=torch_device('cpu')))
+    model.eval()
     device = torch_device('cuda:0' if config.GPU_mode and cuda.is_available() else 'cpu')
     model.to(device)
 else:
