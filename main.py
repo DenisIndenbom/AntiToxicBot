@@ -221,7 +221,6 @@ def get_statistics(message: Message):
         return
 
     if message.from_user.id not in data[chat_id]['admin_id']:
-        bot.send_message(message.from_user.id, f'@{message.from_user.username} вы не админ!')
         return
 
     users_stat = []
@@ -252,13 +251,12 @@ def get_toxics(message: Message):
         return
 
     if message.from_user.id not in data[chat_id]['admin_id']:
-        bot.send_message(message.from_user.id, f'@{message.from_user.username} вы не админ!')
         return
 
     toxics = ''
     for i in range(len(data[chat_id]['user_id'])):
         if data[chat_id]['is_toxic'][i]:
-            toxics += '@'+ bot.get_chat_member(chat_id,data[chat_id]['user_id'][i]).user.username + '\n'
+            toxics += '@'+ bot.get_chat_member(chat_id, data[chat_id]['user_id'][i]).user.username + '\n'
 
     toxics = 'Токсиков нет' if toxics == '' else toxics
 
