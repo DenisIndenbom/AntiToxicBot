@@ -250,8 +250,8 @@ def get_toxics(message: Message):
         bot.send_message(message.chat.id, 'Вашего чата нет в базе данныхю. Пропишите команду /add_chat')
         return
 
-    if message.from_user.id not in data[chat_id]['admin_id']:
-        return
+    # if message.from_user.id not in data[chat_id]['admin_id']:
+    #     return
 
     toxics = ''
     for i in range(len(data[chat_id]['user_id'])):

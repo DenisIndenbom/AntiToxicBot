@@ -17,11 +17,11 @@ class RulesClassifier:
         self.list_of_bad_words = bad_words
     @staticmethod
     def clear_text(text: str):
-        bad_symbols = [",", "!", ":", "/", ".", "|", "(", ")", "-", "_", "?", ";", "@", "#", "$", "%", "^", "&", "*", "-", "_", "+", "="]
+        valid_symbols = [x for x in 'qwertyuiopasdfghjklzxcvbnmйцукенгшщзхъфывапролджэячсмитьбюё']
         clear_text = ''
 
-        for symbol in text:
-            if symbol not in bad_symbols:
+        for symbol in text.lower():
+            if symbol in valid_symbols:
                 clear_text += symbol
         return clear_text
 
