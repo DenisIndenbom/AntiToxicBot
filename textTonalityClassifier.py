@@ -17,7 +17,7 @@ class RulesClassifier:
         self.list_of_bad_words = bad_words
     @staticmethod
     def clear_text(text: str):
-        bad_symbols = [",", "!", ":", "/", ".", "|", "(", ")", "-", "_", "?", ";"]
+        bad_symbols = [",", "!", ":", "/", ".", "|", "(", ")", "-", "_", "?", ";", "@", "#", "$", "%", "^", "&", "*", "-", "_", "+", "="]
         clear_text = ''
 
         for symbol in text:

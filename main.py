@@ -276,7 +276,7 @@ def moderate(message: Message):
     data = load_data('users.json')
 
     if chat_id not in data:
-        bot.send_message(message.chat.id,'Извините, у меня нет вашего чата в бд')
+        bot.send_message(message.chat.id,'Извините, у меня нет вашего чата в бд. Пропишите в чате команду /add_chat')
         return
 
     # find user in data
