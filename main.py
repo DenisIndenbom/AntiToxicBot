@@ -303,7 +303,7 @@ def moderate(message: Message):
         data[chat_id]["positive"][index] += 1
 
     # check that the rating has not exceeded the threshold
-    if data[chat_id]["rating"][index] < config.toxic_threshold:
+    if data[chat_id]["rating"][index] < config.toxic_threshold and not data[chat_id]['is_toxic'][index]:
         # ban toxic user
         waring_text = 'очень токсичен. \nЧтобы узнать список токсичных людей, пропишите /get_toxics'
         if data[chat_id]['ban_mode']:
@@ -322,6 +322,8 @@ def moderate(message: Message):
 
         for admin_id in data[chat_id]['admin_id']:
             bot.send_message(admin_id, f'Warring: Пользователь @{user.username} {waring_text}')
+    elif config.toxic_threshold > data[chat_id]["rating"][index] and data[chat_id]['is_toxic'][index]:
+        data[chat_id]['is_toxic'][index] = False
 
     # save user data
     save_data(data, 'users.json')
