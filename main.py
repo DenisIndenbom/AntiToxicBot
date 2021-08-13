@@ -1,3 +1,5 @@
+from json.encoder import JSONEncoder
+
 import telebot
 from telebot.types import Message, User
 
