@@ -91,7 +91,7 @@ def check_message_from_the_group(message: Message):
 
 def load_data(path):
     with open(path, "r") as file:
-        data = json.load(file)
+        data = json.loads(file.read())
     return data
 
 def save_data(data,path):
