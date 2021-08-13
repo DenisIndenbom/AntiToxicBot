@@ -76,9 +76,9 @@ class TextClassifierNN(torch.nn.Module):
 
         self.embedding = NavecEmbedding(navec)  # torch.nn.Embedding(input_size, embedding_dim)
 
-        self.conv1 = torch.nn.Conv1d(300, 512, kernel_size=3, padding=1)
-        self.conv2 = torch.nn.Conv1d(512, 1024, kernel_size=3, padding=1)
-        self.conv3 = torch.nn.Conv1d(1024, 2048, kernel_size=3, padding=1)
+        self.conv1 = torch.nn.Conv1d(embedding_dim, 512, kernel_size=(5,), padding=2)
+        self.conv2 = torch.nn.Conv1d(512, 1024, kernel_size=(3,), padding=1)
+        self.conv3 = torch.nn.Conv1d(1024, 2048, kernel_size=(5,), padding=2)
 
         self.gru = torch.nn.GRU(2048, gru_hidden_size, batch_first=True)
 
