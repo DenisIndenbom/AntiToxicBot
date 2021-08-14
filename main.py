@@ -80,7 +80,6 @@ def check_is_toxic(text):
     else:
         x = get_text_embedding(tokenized_data, navec_model)
         y = model.predict(x)
-
     return bool(y)
 
 def check_message_from_the_group(message: Message):
@@ -218,8 +217,8 @@ def get_statistics(message: Message):
         bot.send_message(message.chat.id, 'Вашего чата нет в базе данныхю. Пропишите команду /add_chat')
         return
 
-    if message.from_user.id not in data[chat_id]['admin_id']:
-        return
+    # if message.from_user.id not in data[chat_id]['admin_id']:
+    #     return
 
     users_stat = []
     for i in range(len(data[chat_id]['user_id'])):
@@ -324,4 +323,4 @@ def moderate(message: Message):
     # save user data
     save_data(data, 'users.json')
 
-bot.polling(none_stop=True, timeout=0)
+bot.polling(none_stop=True, timeout=30)
