@@ -9,4 +9,4 @@ reward_for_positive = 0.25
 
 NN_mode = True
 
-GPU_mode = False
+GPU_mode = True

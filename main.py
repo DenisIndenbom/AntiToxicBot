@@ -74,7 +74,7 @@ def check_is_toxic(text):
 
     if config.NN_mode:
         x = get_text_indexes(tokenized_data,navec_model)
-        x = LongTensor(x)
+        x = LongTensor(x).to(device)
         x = x.unsqueeze(0)
         y = model.predict(x).argmax()
     else:
