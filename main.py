@@ -233,7 +233,10 @@ def get_statistics(message: Message):
 
     statistics = 'Статистики пока нет' if statistics == '' else statistics
 
-    bot.send_message(message.chat.id, statistics)
+    try:
+        bot.send_message(message.from_user.id, statistics)
+    except:
+        pass
 
 @bot.message_handler(commands=['get_toxics'])
 def get_toxics(message: Message):
@@ -257,7 +260,10 @@ def get_toxics(message: Message):
 
     toxics = 'Токсиков нет' if toxics == '' else toxics
 
-    bot.send_message(message.from_user.id, toxics)
+    try:
+        bot.send_message(message.from_user.id, toxics)
+    except:
+        pass
 
 @bot.message_handler(content_types=['text'])
 def moderate(message: Message):
@@ -310,13 +316,19 @@ def moderate(message: Message):
             data[chat_id]['positive'].pop(index)
             data[chat_id]['is_toxic'].pop(index)
 
-            bot.kick_chat_member(message.chat.id, user.id)
-            bot.send_message(message.chat.id, f'Пользователь @{user.username} {waring_text}')
+            try:
+                bot.kick_chat_member(message.chat.id, user.id)
+                bot.send_message(message.chat.id, f'Пользователь @{user.username} {waring_text}')
+            except:
+                bot.send_message(message.chat.id, f'Я не могу банить пользователей. Дайте мне админ права или пропишите /set_ban_mode 0')
 
         data[chat_id]['is_toxic'][index] = True
 
         for admin_id in data[chat_id]['admin_id']:
-            bot.send_message(admin_id, f'Warring: Пользователь @{user.username} {waring_text}')
+            try:
+                bot.send_message(admin_id, f'Warring: Пользователь @{user.username} {waring_text}')
+            except:
+                pass
     elif data[chat_id]["rating"][index] > config.toxic_threshold and data[chat_id]['is_toxic'][index]:
         data[chat_id]['is_toxic'][index] = False
 
