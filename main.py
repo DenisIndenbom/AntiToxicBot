@@ -110,6 +110,7 @@ def help(message: Message):
     bot.send_message(message.chat.id, 'Я анти токсик бот. Я буду банить слишком токсичных людей\n'
                                       '\n/help - помощь'
                                       '\n\n/add_chat - добавить чат в базу данных бота'
+                                      '\n\n/delete_chat - удалить чат из базы данных бота'
                                       '\n\n/add_admins - добавить админов. Они должны быть в списке админов в чате.\nПример: /add_admins User1 User2'
                                       '\n\n/set_ban_mode - установить режим бана (бан включён/выключен). \nПример:\n /set_ban_mode 1 - бот будет банить токсичныйх пользователей\n /set_ban_mode 0 - бот не будет банить пользователей,но будет уведомлять админов в лс о токсиков'
                                       '\n\n/get_statistics - статистика (пользователь, рейтинг, кол-во токсичныйх сообщений, кол-во позитивных сообщений)'
@@ -353,9 +354,5 @@ def moderate(message: Message):
     # save user data
     save_data(data, 'users.json')
 
-ReadTimeout_error_num = 0
-while ReadTimeout_error_num < 5:
-    try:
-        bot.polling(none_stop=True, timeout=30)
-    except requests.ReadTimeout:
-        ReadTimeout_error_num += 1
+
+bot.infinity_polling(timeout=30)
