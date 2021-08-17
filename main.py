@@ -1,3 +1,4 @@
+import requests
 import telebot
 from telebot.types import Message, User
 
@@ -335,4 +336,9 @@ def moderate(message: Message):
     # save user data
     save_data(data, 'users.json')
 
-bot.polling(none_stop=True, timeout=30)
+ReadTimeout_error_num = 0
+while ReadTimeout_error_num < 5:
+    try:
+        bot.polling(none_stop=True, timeout=30)
+    except requests.ReadTimeout:
+        ReadTimeout_error_num += 1
