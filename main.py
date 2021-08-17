@@ -128,8 +128,8 @@ def add_chat(message: Message):
 
     data = load_data('users.json')
 
-    if str(chat_id) in data:
-        bot.send_message(message.chat.id, 'Чат уже добавлен в базу данных')
+    if chat_id in data:
+        bot.send_message(message.chat.id, 'Чат уже добавлен в базу данных бота')
         return
 
     admins = bot.get_chat_administrators(message.chat.id)
@@ -137,6 +137,23 @@ def add_chat(message: Message):
     data[chat_id] = copy.deepcopy(data['chat_id_example'])
     data[chat_id]['admin_id'].append(creator.id)
     bot.send_message(message.chat.id,'Чат добавлен в базу данных')
+
+    save_data(data, 'users.json')
+
+@bot.message_handler(commands=['delete_chat'])
+def delete_chat(message: Message):
+    if check_message_from_the_group(message):
+        return
+    chat_id = str(message.chat.id)
+
+    data = load_data('users.json')
+
+    if chat_id not in data:
+        bot.send_message(message.chat.id, 'Чата нет в базе данных бота')
+        return
+
+    data.pop(chat_id)
+    bot.send_message(message.chat.id,'Чат удалён из базы данных бота')
 
     save_data(data, 'users.json')
 
