@@ -1,4 +1,3 @@
-import requests
 import telebot
 from telebot.types import Message, User
 

@@ -19,12 +19,12 @@ class RulesClassifier:
     @staticmethod
     def clear_text(text: str):
         valid_symbols = [x for x in 'qwertyuiopasdfghjklzxcvbnmйцукенгшщзхъфывапролджэячсмитьбюё']
-        clear_text = ''
+        new_text = ''
 
         for symbol in text.lower():
             if symbol in valid_symbols:
-                clear_text += symbol
-        return clear_text
+                new_text += symbol
+        return new_text
 
     def predict(self, x: list):
         """
