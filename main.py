@@ -10,7 +10,6 @@ from torch import load as load_nn
 from torch import device as torch_device
 from torch import LongTensor, cuda
 
-
 import numpy as np
 
 import json
@@ -28,7 +27,7 @@ tokenizer = WordPunctTokenizer()
 
 if config.NN_mode:
     model = TextClassifierNN(300, 512, 256, 2, navec_model)
-    model.load_state_dict(load_nn("TextClassifierNN.nn",map_location=torch_device('cpu')))
+    model.load_state_dict(load_nn("TextClassifierNN.nn", map_location=torch_device('cpu')))
     model.eval()
     device = torch_device('cuda:0' if config.GPU_mode and cuda.is_available() else 'cpu')
     model.to(device)
@@ -44,27 +43,30 @@ def get_text_indexes(words, word_model):
 
     for word in words:
         try:
-          indexes.append(word_model.vocab[word])
+            indexes.append(word_model.vocab[word])
         except KeyError:
-          indexes.append(0)
+            indexes.append(0)
 
     return np.array(indexes, dtype=np.int64)
 
+
 def add_zero_indexes(ind, max_text_ind_len):
     if len(ind) < max_text_ind_len:
-        z_arr = np.zeros((max_text_ind_len - len(ind)),dtype=np.int64).T
-        ind = np.concatenate((ind,z_arr),axis=0)
+        z_arr = np.zeros((max_text_ind_len - len(ind)), dtype=np.int64).T
+        ind = np.concatenate((ind, z_arr), axis=0)
     return ind
+
 
 def get_text_embedding(words, word_model):
     # get text embedding, simply averaging embeddings of words in it
     vec = []
     for word in words:
         try:
-          vec.append(word_model[word])
+            vec.append(word_model[word])
         except KeyError:
-          vec.append(np.zeros(300))
+            vec.append(np.zeros(300))
     return np.array(vec).mean(axis=0)
+
 
 def check_is_toxic(text):
     tokenized_data = tokenizer.tokenize(text.lower())
@@ -73,7 +75,7 @@ def check_is_toxic(text):
         return True
 
     if config.NN_mode:
-        x = get_text_indexes(tokenized_data,navec_model)
+        x = get_text_indexes(tokenized_data, navec_model)
         x = LongTensor(x).to(device)
         x = x.unsqueeze(0)
         y = model.predict(x).argmax()
@@ -82,20 +84,24 @@ def check_is_toxic(text):
         y = model.predict(x)
     return bool(y)
 
+
 def check_message_from_the_group(message: Message):
     if message.chat.type != 'group' and message.chat.type != 'supergroup':
         bot.send_message(message.chat.id, 'Эта команда работает только в группах')
         return True
     return False
 
+
 def load_data(path):
     with open(path, "r") as file:
         data = json.loads(file.read())
     return data
 
-def save_data(data,path):
+
+def save_data(data, path):
     with open(path, "w") as file:
         file.write(json.dumps(data))
+
 
 @bot.message_handler(commands=['start'])
 def start(message: Message):
@@ -103,6 +109,7 @@ def start(message: Message):
                                       'Я анти токсик бот. Я против токсичных людей. '
                                       'Я буду банить их за чрезмерную токсичность.\n\n'
                                       'Просто добавь меня в чат и в чате напиши команду /add_chat')
+
 
 @bot.message_handler(commands=['help'])
 def help(message: Message):
@@ -116,9 +123,11 @@ def help(message: Message):
                                       '\n\n/get_toxics - список токсиков'
                                       '\n\n/github - исходники')
 
+
 @bot.message_handler(commands=['github'])
 def github(message: Message):
     bot.send_message(message.chat.id, 'Github - https://github.com/DenisIndenbom/AntiToxicBot')
+
 
 @bot.message_handler(commands=['add_chat'])
 def add_chat(message: Message):
@@ -136,9 +145,10 @@ def add_chat(message: Message):
     creator = [admin.user for admin in admins if admin.status == 'creator'][0]
     data[chat_id] = copy.deepcopy(data['chat_id_example'])
     data[chat_id]['admin_id'].append(creator.id)
-    bot.send_message(message.chat.id,'Чат добавлен в базу данных')
+    bot.send_message(message.chat.id, 'Чат добавлен в базу данных')
 
     save_data(data, 'users.json')
+
 
 @bot.message_handler(commands=['delete_chat'])
 def delete_chat(message: Message):
@@ -153,9 +163,10 @@ def delete_chat(message: Message):
         return
 
     data.pop(chat_id)
-    bot.send_message(message.chat.id,'Чат удалён из базы данных бота')
+    bot.send_message(message.chat.id, 'Чат удалён из базы данных бота')
 
     save_data(data, 'users.json')
+
 
 @bot.message_handler(commands=['add_admins'])
 def add_admins(message: Message):
@@ -186,15 +197,16 @@ def add_admins(message: Message):
                 admin_id = admin.user.id
                 break
         if admin_id is None:
-            bot.send_message(message.chat.id,f'Пользователь {arg} не евляеться админом или его несуществует')
+            bot.send_message(message.chat.id, f'Пользователь {arg} не евляеться админом или его несуществует')
 
         if admin_id not in data[chat_id]['admin_id']:
             data[chat_id]['admin_id'].append(admin_id)
         else:
-            bot.send_message(message.chat.id,f'Пользователь {arg} уже являеться админом')
+            bot.send_message(message.chat.id, f'Пользователь {arg} уже являеться админом')
     bot.send_message(message.chat.id, f'Операция завершина')
 
     save_data(data, 'users.json')
+
 
 @bot.message_handler(commands=['set_ban_mode'])
 def set_ban_mode(message: Message):
@@ -222,6 +234,7 @@ def set_ban_mode(message: Message):
 
     save_data(data, 'users.json')
 
+
 @bot.message_handler(commands=['get_statistics'])
 def get_statistics(message: Message):
     if check_message_from_the_group(message):
@@ -240,13 +253,17 @@ def get_statistics(message: Message):
 
     users_stat = []
     for i in range(len(data[chat_id]['user_id'])):
-        users_stat.append([bot.get_chat_member(message.chat.id, data[chat_id]['user_id'][i]).user.username,'rating ' + str(data[chat_id]['rating'][i]),'toxic '+ str(data[chat_id]['toxic'][i]),'positive '+ str(data[chat_id]['positive'][i])])
+        user = bot.get_chat_member(message.chat.id, data[chat_id]['user_id'][i]).user
+        username = user.username if user.username is not None else user.last_name + ' ' + user.first_name
+        users_stat.append([username,
+                           'rating ' + str(data[chat_id]['rating'][i]), 'toxic ' + str(data[chat_id]['toxic'][i]),
+                           'positive ' + str(data[chat_id]['positive'][i])])
     statistics = ''
     for row in users_stat:
         buf = ''
         for item in row:
-            buf+=str(item)+'|'
-        buf +='\n'
+            buf += str(item) + '|'
+        buf += '\n'
         statistics += buf
 
     statistics = 'Статистики пока нет' if statistics == '' else statistics
@@ -255,6 +272,7 @@ def get_statistics(message: Message):
         bot.send_message(message.from_user.id, statistics)
     except:
         pass
+
 
 @bot.message_handler(commands=['get_toxics'])
 def get_toxics(message: Message):
@@ -274,7 +292,7 @@ def get_toxics(message: Message):
     toxics = ''
     for i in range(len(data[chat_id]['user_id'])):
         if data[chat_id]['is_toxic'][i]:
-            toxics += '@'+ bot.get_chat_member(chat_id, data[chat_id]['user_id'][i]).user.username + '\n'
+            toxics += '@' + bot.get_chat_member(chat_id, data[chat_id]['user_id'][i]).user.username + '\n'
 
     toxics = 'Токсиков нет' if toxics == '' else toxics
 
@@ -282,6 +300,7 @@ def get_toxics(message: Message):
         bot.send_message(message.from_user.id, toxics)
     except:
         pass
+
 
 @bot.message_handler(content_types=['text'])
 def moderate(message: Message):
@@ -295,7 +314,7 @@ def moderate(message: Message):
     data = load_data('users.json')
 
     if chat_id not in data:
-        bot.send_message(message.chat.id,'Извините, у меня нет вашего чата в бд. Пропишите в чате команду /add_chat')
+        bot.send_message(message.chat.id, 'Извините, у меня нет вашего чата в бд. Пропишите в чате команду /add_chat')
         return
 
     # find user in data
@@ -311,7 +330,7 @@ def moderate(message: Message):
         data[chat_id]["toxic"].append(0)
         data[chat_id]["positive"].append(0)
         data[chat_id]["is_toxic"].append(False)
-        index = len(data[chat_id]['user_id'])-1
+        index = len(data[chat_id]['user_id']) - 1
 
     # check the user for toxicity and change rating
     if check_is_toxic(message.text):
@@ -338,7 +357,8 @@ def moderate(message: Message):
                 bot.kick_chat_member(message.chat.id, user.id)
                 bot.send_message(message.chat.id, f'Пользователь @{user.username} {waring_text}')
             except:
-                bot.send_message(message.chat.id, f'Я не могу банить пользователей. Дайте мне админ права или пропишите /set_ban_mode 0')
+                bot.send_message(message.chat.id,
+                                 f'Я не могу банить пользователей. Дайте мне админ права или пропишите /set_ban_mode 0')
 
         data[chat_id]['is_toxic'][index] = True
 
