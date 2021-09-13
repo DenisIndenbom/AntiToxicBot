@@ -245,7 +245,7 @@ def get_statistics(message: Message):
     data = load_data('users.json')
 
     if chat_id not in data:
-        bot.send_message(message.chat.id, 'Вашего чата нет в базе данныхю. Пропишите команду /add_chat')
+        bot.send_message(message.chat.id, 'Вашего чата нет в базе данных. Пропишите команду /add_chat')
         return
 
     # if message.from_user.id not in data[chat_id]['admin_id']:
@@ -253,11 +253,15 @@ def get_statistics(message: Message):
 
     users_stat = []
     for i in range(len(data[chat_id]['user_id'])):
-        user = bot.get_chat_member(message.chat.id, data[chat_id]['user_id'][i]).user
-        username = user.username if user.username is not None else user.last_name + ' ' + user.first_name
-        users_stat.append([username,
-                           'rating ' + str(data[chat_id]['rating'][i]), 'toxic ' + str(data[chat_id]['toxic'][i]),
-                           'positive ' + str(data[chat_id]['positive'][i])])
+        try:
+            user = bot.get_chat_member(message.chat.id, data[chat_id]['user_id'][i]).user
+            username = user.username if user.username is not None else user.last_name + ' ' + user.first_name
+            users_stat.append([username,
+                               'rating ' + str(data[chat_id]['rating'][i]), 'toxic ' + str(data[chat_id]['toxic'][i]),
+                               'positive ' + str(data[chat_id]['positive'][i])])
+        except:
+            pass
+
     statistics = ''
     for row in users_stat:
         buf = ''
