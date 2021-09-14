@@ -10,11 +10,13 @@ class RulesClassifier:
     """
             The rules tonality model.
     """
-    def __init__(self, bad_words: list):
+    def __init__(self, bad_words: list, bad_word_threshold = 0.75):
         """
         :param bad_words: list of bad words
+        :param bad_word_threshold: float in the range 0 to 1
         """
         self.list_of_bad_words = bad_words
+        self.bad_word_threshold = bad_word_threshold
 
     @staticmethod
     def clear_text(text: str):
@@ -39,13 +41,14 @@ class RulesClassifier:
                 clear_word = self.clear_text(word)
                 if clear_word == '':
                     continue
-                if process.extractOne(clear_word, self.list_of_bad_words)[1] > 75:
+                if process.extractOne(clear_word, self.list_of_bad_words)[1] > self.bad_word_threshold*100:
                     in_list = True
                     break
             if in_list:
                 y.append(1)
             else:
                 y.append(0)
+
         return np.array(y)
 
 class CBClassifier:

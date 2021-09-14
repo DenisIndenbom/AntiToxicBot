@@ -35,7 +35,7 @@ else:
     model = CatBoostClassifier()
     model.load_model('ToxicClassifier.model', format='cbm')
 
-rules_clf = RulesClassifier(config.bad_words)
+rules_clf = RulesClassifier(config.bad_words, config.message_toxicity_threshold)
 
 
 def get_text_indexes(words, word_model):
@@ -82,6 +82,7 @@ def check_is_toxic(text):
     else:
         x = get_text_embedding(tokenized_data, navec_model)
         y = model.predict(x)
+
     return bool(y)
 
 
@@ -345,7 +346,7 @@ def moderate(message: Message):
         data[chat_id]["positive"][index] += 1
 
     # check that the rating has not exceeded the threshold
-    if data[chat_id]["rating"][index] < config.toxic_threshold and not data[chat_id]['is_toxic'][index]:
+    if data[chat_id]["rating"][index] < config.user_toxicity_threshold and not data[chat_id]['is_toxic'][index]:
         # ban toxic user
         waring_text = 'очень токсичен. \nЧтобы узнать список токсичных людей, пропишите /get_toxics'
         if data[chat_id]['ban_mode']:
@@ -371,7 +372,7 @@ def moderate(message: Message):
                 bot.send_message(admin_id, f'Warring: Пользователь @{user.username} {waring_text}')
             except:
                 pass
-    elif data[chat_id]["rating"][index] > config.toxic_threshold and data[chat_id]['is_toxic'][index]:
+    elif data[chat_id]["rating"][index] > config.user_toxicity_threshold and data[chat_id]['is_toxic'][index]:
         data[chat_id]['is_toxic'][index] = False
 
     # save user data
