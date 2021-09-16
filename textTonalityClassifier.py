@@ -6,11 +6,13 @@ from catboost import CatBoostClassifier
 import torch
 from slovnet.model.emb import NavecEmbedding
 
+
 class RulesClassifier:
     """
             The rules tonality model.
     """
-    def __init__(self, bad_words: list, bad_word_threshold = 0.75):
+
+    def __init__(self, bad_words: list, bad_word_threshold=0.75):
         """
         :param bad_words: list of bad words
         :param bad_word_threshold: float in the range 0 to 1
@@ -41,7 +43,7 @@ class RulesClassifier:
                 clear_word = self.clear_text(word)
                 if clear_word == '':
                     continue
-                if process.extractOne(clear_word, self.list_of_bad_words)[1] > self.bad_word_threshold*100:
+                if process.extractOne(clear_word, self.list_of_bad_words, scorer=fuzz.ratio)[1] > self.bad_word_threshold * 100:
                     in_list = True
                     break
             if in_list:
@@ -51,6 +53,7 @@ class RulesClassifier:
 
         return np.array(y)
 
+
 class CBClassifier:
     def __init__(self, model_path: str):
         """
@@ -59,7 +62,7 @@ class CBClassifier:
         self.cb_clf = CatBoostClassifier()
         self.cb_clf.load_model(model_path, format='cbm')
 
-    def predict(self,x):
+    def predict(self, x):
         """
         :param x: input 1d array-like or 2d array-like.
         :return: numpy array with predictions.
