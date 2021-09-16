@@ -78,7 +78,7 @@ def check_is_toxic(text):
         x = get_text_indexes(tokenized_data, navec_model)
         x = LongTensor(x).to(device)
         x = x.unsqueeze(0)
-        probability_of_toxicity = model.predict(x)[0][1] # we take the predicted probability of toxicity
+        probability_of_toxicity = model.predict(x)[0][1]  # we take the predicted probability of toxicity
         y = float(probability_of_toxicity) > config.message_toxicity_threshold
     else:
         x = get_text_embedding(tokenized_data, navec_model)
