@@ -78,12 +78,14 @@ def check_is_toxic(text):
         x = get_text_indexes(tokenized_data, navec_model)
         x = LongTensor(x).to(device)
         x = x.unsqueeze(0)
-        y = model.predict(x).argmax()
+        probability_of_toxicity = model.predict(x)[1]
+        y = int(probability_of_toxicity) > config.message_toxicity_threshold
     else:
         x = get_text_embedding(tokenized_data, navec_model)
         y = model.predict(x)
+        y = bool(y)
 
-    return bool(y)
+    return y
 
 
 def check_message_from_the_group(message: Message):
