@@ -390,4 +390,4 @@ def moderate(message: Message):
     save_data(data, 'users.json')
 
 
-bot.infinity_polling(timeout=30)
+bot.infinity_polling(timeout=15)
