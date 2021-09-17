@@ -157,12 +157,17 @@ def add_chat(message: Message):
 def delete_chat(message: Message):
     if check_message_from_the_group(message):
         return
+
     chat_id = str(message.chat.id)
 
     data = load_data('users.json')
 
     if chat_id not in data:
         bot.send_message(message.chat.id, 'Чата нет в базе данных бота')
+        return
+
+    if message.from_user.id not in data[chat_id]['admin_id']:
+        bot.send_message(message.chat.id, f'@{message.from_user.username} вы не админ!')
         return
 
     data.pop(chat_id)
