@@ -179,12 +179,12 @@ def add_admins(message: Message):
 
     data = load_data('users.json')
 
-    if message.from_user.id not in data[chat_id]['admin_id']:
-        bot.send_message(message.chat.id, f'@{message.from_user.username} вы не админ!')
+    if chat_id not in data:
+        bot.send_message(message.chat.id, 'Вашего чата нет в базе данных. Пропишите команду /add_chat')
         return
 
-    if chat_id not in data:
-        bot.send_message(message.chat.id, 'Вашего чата нет в базе данныхю. Пропишите команду /add_chat')
+    if message.from_user.id not in data[chat_id]['admin_id']:
+        bot.send_message(message.chat.id, f'@{message.from_user.username} вы не админ!')
         return
 
     args = message.text.split()[1:]
@@ -220,7 +220,11 @@ def set_ban_mode(message: Message):
     data = load_data('users.json')
 
     if chat_id not in data:
-        bot.send_message(message.chat.id, 'Вашего чата нет в базе данныхю. Пропишите команду /add_chat')
+        bot.send_message(message.chat.id, 'Вашего чата нет в базе данных. Пропишите команду /add_chat')
+        return
+
+    if message.from_user.id not in data[chat_id]['admin_id']:
+        bot.send_message(message.chat.id, f'@{message.from_user.username} вы не админ!')
         return
 
     try:
