@@ -121,8 +121,8 @@ def help(message: Message):
                                       '\n\n/add_chat - добавить чат в базу данных бота'
                                       '\n\n/delete_chat - удалить чат из базы данных бота'
                                       '\n\n/add_admins - добавить админов. Они должны быть в списке админов в чате.\nПример: /add_admins User1 User2'
-                                      '\n\n/set_ban_mode - установить режим бана (бан включён/выключен). \nПример:\n /set_ban_mode 1 - бот будет банить токсичныйх пользователей\n /set_ban_mode 0 - бот не будет банить пользователей,но будет уведомлять админов в лс о токсиков'
-                                      '\n\n/get_statistics - статистика (пользователь, рейтинг, кол-во токсичныйх сообщений, кол-во позитивных сообщений)'
+                                      '\n\n/set_ban_mode - установить режим бана (бан включён/выключен). \nПример:\n /set_ban_mode 1 - бот будет банить токсичных пользователей\n /set_ban_mode 0 - бот не будет банить пользователей,но будет уведомлять админов в лс о токсиков'
+                                      '\n\n/get_statistics - статистика (пользователь, рейтинг, кол-во токсичных сообщений, кол-во позитивных сообщений)'
                                       '\n\n/get_toxics - список токсиков'
                                       '\n\n/github - исходники')
 
@@ -200,13 +200,13 @@ def add_admins(message: Message):
                 admin_id = admin.user.id
                 break
         if admin_id is None:
-            bot.send_message(message.chat.id, f'Пользователь {arg} не евляеться админом или его несуществует')
+            bot.send_message(message.chat.id, f'Пользователь {arg} не является админом или его не существует')
 
         if admin_id not in data[chat_id]['admin_id']:
             data[chat_id]['admin_id'].append(admin_id)
         else:
-            bot.send_message(message.chat.id, f'Пользователь {arg} уже являеться админом')
-    bot.send_message(message.chat.id, f'Операция завершина')
+            bot.send_message(message.chat.id, f'Пользователь {arg} уже является админом')
+    bot.send_message(message.chat.id, f'Операция завершена')
 
     save_data(data, 'users.json')
 
@@ -294,7 +294,7 @@ def get_toxics(message: Message):
     data = load_data('users.json')
 
     if chat_id not in data:
-        bot.send_message(message.chat.id, 'Вашего чата нет в базе данныхю. Пропишите команду /add_chat')
+        bot.send_message(message.chat.id, 'Вашего чата нет в базе данных. Пропишите команду /add_chat')
         return
 
     if message.from_user.id not in data[chat_id]['admin_id']:
