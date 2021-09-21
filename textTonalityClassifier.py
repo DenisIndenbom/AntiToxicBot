@@ -43,7 +43,8 @@ class RulesClassifier:
                 clear_word = self.clear_text(word)
                 if clear_word == '':
                     continue
-                if process.extractOne(clear_word, self.list_of_bad_words, scorer=fuzz.ratio)[1] > self.bad_word_threshold * 100:
+                if process.extractOne(clear_word, self.list_of_bad_words, scorer=fuzz.ratio)[
+                    1] > self.bad_word_threshold * 100:
                     in_list = True
                     break
             if in_list:
