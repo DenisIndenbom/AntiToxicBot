@@ -380,7 +380,7 @@ def moderate(message: Message):
 
         for admin_id in data[chat_id]['admin_id']:
             try:
-                bot.send_message(admin_id, f'Warring: Пользователь @{user.username} {waring_text}')
+                bot.send_message(admin_id, f'Warning: Пользователь @{user.username} {waring_text}')
             except:
                 pass
     elif data[chat_id]["rating"][index] > config.user_toxicity_threshold and data[chat_id]['is_toxic'][index]:
