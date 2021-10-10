@@ -149,10 +149,15 @@ def add_chat(message: Message):
         bot.send_message(message.chat.id, 'Чат уже добавлен в базу данных бота')
         return
 
-    admins = bot.get_chat_administrators(message.chat.id)
-    creator = [admin.user for admin in admins if admin.status == 'creator'][0]
-    data[chat_id] = copy.deepcopy(data['chat_id_example'])
-    data[chat_id]['admin_id'].append(creator.id)
+    try:
+        admins = bot.get_chat_administrators(message.chat.id)
+        creator = [admin.user for admin in admins if admin.status == 'creator'][0]
+        data[chat_id] = copy.deepcopy(data['chat_id_example'])
+        data[chat_id]['admin_id'].append(creator.id)
+    except:
+        bot.send_message(message.chat.id, 'Ошибка: не удалось добавить чат в базу данных')
+        return
+
     bot.send_message(message.chat.id, 'Чат добавлен в базу данных')
 
     save_data(data, 'users.json')
