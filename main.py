@@ -294,11 +294,7 @@ def get_statistics(message: Message):
 
     statistics = 'Статистики пока нет' if statistics == '' else statistics
 
-    try:
-        bot.send_message(message.chat.id, statistics)
-    except:
-        pass
-
+    bot.send_message(message.chat.id, statistics)
 
 @bot.message_handler(commands=['get_toxics'])
 def get_toxics(message: Message):
