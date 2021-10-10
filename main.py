@@ -22,7 +22,7 @@ from telegramBotAPIToken import telegram_token
 import sentry_sdk
 from sentryToken import sentry_token
 
-sentry_sdk.init(sentry_token, traces_sample_rate=1.0)
+sentry_sdk.init(sentry_token, traces_sample_rate=0.35)
 
 bot = telebot.TeleBot(token=telegram_token, threaded=False)
 
