@@ -24,7 +24,7 @@ from sentryToken import sentry_token
 
 sentry_sdk.init(sentry_token, traces_sample_rate=1.0)
 
-bot = telebot.TeleBot(token=telegram_token)
+bot = telebot.TeleBot(token=telegram_token, num_threads=1)
 
 navec_model = Navec.load("navec_hudlit_v1_12B_500K_300d_100q.tar")
 
