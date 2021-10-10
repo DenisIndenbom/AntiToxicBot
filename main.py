@@ -19,6 +19,11 @@ import config
 
 from telegramBotAPIToken import telegram_token
 
+import sentry_sdk
+from sentryToken import sentry_token
+
+sentry_sdk.init(sentry_token, traces_sample_rate=1.0)
+
 bot = telebot.TeleBot(token=telegram_token)
 
 navec_model = Navec.load("navec_hudlit_v1_12B_500K_300d_100q.tar")
@@ -285,7 +290,7 @@ def get_statistics(message: Message):
     statistics = 'Статистики пока нет' if statistics == '' else statistics
 
     try:
-        bot.send_message(message.from_user.id, statistics)
+        bot.send_message(message.chat.id, statistics)
     except:
         pass
 
