@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 from fuzzywuzzy import process, fuzz
 
@@ -11,6 +13,7 @@ class RulesClassifier:
     """
             The rules tonality model.
     """
+    valid_symbols_re = re.compile('[^a-zа-я]', flags=re.IGNORECASE)
 
     def __init__(self, bad_words: list, bad_word_threshold=0.75):
         """
@@ -20,15 +23,12 @@ class RulesClassifier:
         self.list_of_bad_words = bad_words
         self.bad_word_threshold = bad_word_threshold
 
-    @staticmethod
-    def clear_text(text: str):
-        valid_symbols = [x for x in 'qwertyuiopasdfghjklzxcvbnmйцукенгшщзхъфывапролджэячсмитьбюё']
-        new_text = ''
-
-        for symbol in text.lower():
-            if symbol in valid_symbols:
-                new_text += symbol
-        return new_text
+    def clear_text(self, text: str):
+        """
+        :param text: str
+        :return: clean text
+        """
+        return self.valid_symbols_re.sub('', text)
 
     def predict(self, x: list):
         """
