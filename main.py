@@ -121,15 +121,9 @@ def start(message: Message):
 
 @bot.message_handler(commands=['help'])
 def help(message: Message):
-    bot.send_message(message.chat.id, 'Я анти токсик бот. Я буду банить слишком токсичных людей\n'
-                                      '\n/help - помощь'
-                                      '\n\n/add_chat - добавить чат в базу данных бота'
-                                      '\n\n/delete_chat - удалить чат из базы данных бота'
-                                      '\n\n/add_admins - добавить админов. Они должны быть в списке админов в чате.\nПример: /add_admins User1 User2'
-                                      '\n\n/set_ban_mode - установить режим бана (бан включён/выключен). \nПример:\n /set_ban_mode 1 - бот будет банить токсичных пользователей\n /set_ban_mode 0 - бот не будет банить пользователей,но будет уведомлять админов в лс о токсиков'
-                                      '\n\n/get_statistics - статистика (пользователь, рейтинг, кол-во токсичных сообщений, кол-во позитивных сообщений)'
-                                      '\n\n/get_toxics - список токсиков'
-                                      '\n\n/github - исходники')
+    with open('help.txt', 'r', encoding='utf-8-sig') as file:
+        help_text = file.read()
+    bot.send_message(message.chat.id, help_text)
 
 
 @bot.message_handler(commands=['github'])
