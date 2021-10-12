@@ -324,6 +324,8 @@ def moderate(message: Message):
 
     if chat_id not in data:
         add_chat(message)
+        # reload users data
+        data = load_data('users.json')
 
     # find user in data
     index = -1
@@ -331,6 +333,7 @@ def moderate(message: Message):
         if user.id == user_id:
             index = i
             break
+
     # create user in data
     if index == -1:
         data[chat_id]['user_id'].append(user.id)
