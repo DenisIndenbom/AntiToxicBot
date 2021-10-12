@@ -111,12 +111,28 @@ def save_data(data, path):
         file.write(json.dumps(data))
 
 
+def add_chat(message: Message):
+    chat_id = str(message.chat.id)
+
+    data = load_data('users.json')
+
+    try:
+        admins = bot.get_chat_administrators(message.chat.id)
+        creator = [admin.user for admin in admins if admin.status == 'creator'][0]
+        data[chat_id] = copy.deepcopy(data['chat_id_example'])
+        data[chat_id]['admin_id'].append(creator.id)
+    except Exception:
+        return
+
+    save_data(data, 'users.json')
+
+
 @bot.message_handler(commands=['start'])
 def start(message: Message):
     bot.send_message(message.chat.id, 'Привет!\n'
                                       'Я анти токсик бот. Я против токсичных людей. '
-                                      'Я буду банить их за чрезмерную токсичность.\n\n'
-                                      'Просто добавь меня в чат и в чате напиши команду /add_chat')
+                                      'Я буду банить их за чрезмерную токсичность или вас предупреждать.\n\n'
+                                      'Просто добавь меня в чат.')
 
 
 @bot.message_handler(commands=['help'])
@@ -131,34 +147,8 @@ def github(message: Message):
     bot.send_message(message.chat.id, 'Github - https://github.com/DenisIndenbom/AntiToxicBot')
 
 
-@bot.message_handler(commands=['add_chat'])
-def add_chat(message: Message):
-    if check_message_from_the_group(message):
-        return
-    chat_id = str(message.chat.id)
-
-    data = load_data('users.json')
-
-    if chat_id in data:
-        bot.send_message(message.chat.id, 'Чат уже добавлен в базу данных бота')
-        return
-
-    try:
-        admins = bot.get_chat_administrators(message.chat.id)
-        creator = [admin.user for admin in admins if admin.status == 'creator'][0]
-        data[chat_id] = copy.deepcopy(data['chat_id_example'])
-        data[chat_id]['admin_id'].append(creator.id)
-    except Exception:
-        bot.send_message(message.chat.id, 'Ошибка: не удалось добавить чат в базу данных')
-        return
-
-    bot.send_message(message.chat.id, 'Чат добавлен в базу данных')
-
-    save_data(data, 'users.json')
-
-
-@bot.message_handler(commands=['delete_chat'])
-def delete_chat(message: Message):
+@bot.message_handler(commands=['reset_chat'])
+def reset_chat(message: Message):
     if check_message_from_the_group(message):
         return
 
@@ -175,7 +165,7 @@ def delete_chat(message: Message):
         return
 
     data.pop(chat_id)
-    bot.send_message(message.chat.id, 'Чат удалён из базы данных бота')
+    bot.send_message(message.chat.id, 'Чат пересоздан!')
 
     save_data(data, 'users.json')
 
@@ -333,11 +323,7 @@ def moderate(message: Message):
     data = load_data('users.json')
 
     if chat_id not in data:
-        try:
-            bot.send_message(message.chat.id, 'Извините, у меня нет вашего чата в базе данных. Пропишите в чате команду /add_chat')
-        except Exception:
-            pass
-        return
+        add_chat(message)
 
     # find user in data
     index = -1
