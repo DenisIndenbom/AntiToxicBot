@@ -148,7 +148,7 @@ def add_chat(message: Message):
         creator = [admin.user for admin in admins if admin.status == 'creator'][0]
         data[chat_id] = copy.deepcopy(data['chat_id_example'])
         data[chat_id]['admin_id'].append(creator.id)
-    except:
+    except Exception:
         bot.send_message(message.chat.id, 'Ошибка: не удалось добавить чат в базу данных')
         return
 
@@ -279,7 +279,7 @@ def get_statistics(message: Message):
             users_stat.append([username,
                                'rating ' + str(data[chat_id]['rating'][i]), 'toxic ' + str(data[chat_id]['toxic'][i]),
                                'positive ' + str(data[chat_id]['positive'][i])])
-        except:
+        except Exception:
             pass
 
     statistics = ''
@@ -324,15 +324,19 @@ def get_toxics(message: Message):
 def moderate(message: Message):
     if check_message_from_the_group(message):
         return
+
     chat_id = str(message.chat.id)
     # get user
     user: User = message.from_user
-    # load users data
 
+    # load users data
     data = load_data('users.json')
 
     if chat_id not in data:
-        bot.send_message(message.chat.id, 'Извините, у меня нет вашего чата в бд. Пропишите в чате команду /add_chat')
+        try:
+            bot.send_message(message.chat.id, 'Извините, у меня нет вашего чата в базе данных. Пропишите в чате команду /add_chat')
+        except Exception:
+            pass
         return
 
     # find user in data
@@ -374,7 +378,7 @@ def moderate(message: Message):
             try:
                 bot.kick_chat_member(message.chat.id, user.id)
                 bot.send_message(message.chat.id, f'Пользователь @{user.username} {waring_text}')
-            except:
+            except Exception:
                 bot.send_message(message.chat.id,
                                  f'Я не могу банить пользователей. Дайте мне админ права или пропишите /set_ban_mode 0')
         else:
@@ -384,7 +388,7 @@ def moderate(message: Message):
         for admin_id in data[chat_id]['admin_id']:
             try:
                 bot.send_message(admin_id, f'Warning: Пользователь @{user.username} {waring_text}')
-            except:
+            except Exception:
                 pass
     elif data[chat_id]["rating"][index] > config.user_toxicity_threshold and data[chat_id]['is_toxic'][index]:
         # set that the user is not toxic
