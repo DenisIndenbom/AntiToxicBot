@@ -308,8 +308,8 @@ def get_toxics(message: Message):
         bot.send_message(message.chat.id, 'Вашего чата нет в базе данных. Пропишите команду /add_chat')
         return
 
-    if message.from_user.id not in data[chat_id]['admin_id']:
-        return
+    # if message.from_user.id not in data[chat_id]['admin_id']:
+    #     return
 
     toxics = ''
     for i in range(len(data[chat_id]['user_id'])):
@@ -318,11 +318,7 @@ def get_toxics(message: Message):
 
     toxics = 'Токсиков нет' if toxics == '' else toxics
 
-    try:
-        bot.send_message(message.from_user.id, toxics)
-    except:
-        pass
-
+    bot.send_message(message.chat.id, toxics)
 
 @bot.message_handler(content_types=['text'])
 def moderate(message: Message):

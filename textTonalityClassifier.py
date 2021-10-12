@@ -11,7 +11,7 @@ from slovnet.model.emb import NavecEmbedding
 
 class RulesClassifier:
     """
-            The rules tonality model.
+        Classifier of the tonality of the text according to the rules.
     """
     valid_symbols_re = re.compile('[^a-zа-я]', flags=re.IGNORECASE)
 
@@ -72,8 +72,17 @@ class CBClassifier:
 
 
 class TextClassifierNN(torch.nn.Module):
-
+    """
+        Neural network model for the classification of text tonality
+    """
     def __init__(self, embedding_dim, gru_hidden_size, fc_hidden_size, output_size, navec):
+        """
+        :param embedding_dim: embedding dim
+        :param gru_hidden_size: gru hidden size
+        :param fc_hidden_size: full connected hidden size
+        :param output_size: output size
+        :param navec: navec model
+        """
         super(TextClassifierNN, self).__init__()
 
         self.relu = torch.nn.ReLU()
@@ -81,6 +90,9 @@ class TextClassifierNN(torch.nn.Module):
         self.softmax = torch.nn.Softmax(dim=1)
 
         self.embedding = NavecEmbedding(navec)  # torch.nn.Embedding(input_size, embedding_dim)
+
+        #weights = torch.FloatTensor(model.vectors)
+        #self.embedding = torch.nn.Embedding.from_pretrained(weights)
 
         self.conv1 = torch.nn.Conv1d(embedding_dim, 512, kernel_size=(5,), padding=2)
         self.conv2 = torch.nn.Conv1d(512, 1024, kernel_size=(3,), padding=1)
