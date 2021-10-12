@@ -204,10 +204,13 @@ def add_admins(message: Message):
     for arg in args:
         admins = bot.get_chat_administrators(message.chat.id)
         admin_id = None
+        arg = arg.replace('@', '')
+
         for admin in admins:
             if arg == admin.user.username:
                 admin_id = admin.user.id
                 break
+
         if admin_id is None:
             bot.send_message(message.chat.id, f'Пользователь {arg} не является админом или его не существует')
 
@@ -215,6 +218,7 @@ def add_admins(message: Message):
             data[chat_id]['admin_id'].append(admin_id)
         else:
             bot.send_message(message.chat.id, f'Пользователь {arg} уже является админом')
+
     bot.send_message(message.chat.id, f'Операция завершена')
 
     save_data(data, 'users.json')
@@ -290,6 +294,7 @@ def get_statistics(message: Message):
 
     bot.send_message(message.chat.id, statistics)
 
+
 @bot.message_handler(commands=['get_toxics'])
 def get_toxics(message: Message):
     if check_message_from_the_group(message):
@@ -313,6 +318,7 @@ def get_toxics(message: Message):
     toxics = 'Токсиков нет' if toxics == '' else toxics
 
     bot.send_message(message.chat.id, toxics)
+
 
 @bot.message_handler(content_types=['text'])
 def moderate(message: Message):
