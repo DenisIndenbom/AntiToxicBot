@@ -101,8 +101,16 @@ def check_message_from_the_group(message: Message):
 
 
 def load_data(path):
-    with open(path, "r") as file:
-        data = json.loads(file.read())
+    data = None
+    try:
+        with open(path, "r") as file:
+            data = json.loads(file.read())
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        if e == json.JSONDecodeError:
+            print('Data is crash')
+            exit(1)
+
     return data
 
 
@@ -352,7 +360,8 @@ def moderate(message: Message):
         data[chat_id]["positive"][user_index] += 1
 
     # check that the rating has not exceeded the threshold
-    if data[chat_id]["rating"][user_index] < config.user_toxicity_threshold and not data[chat_id]['is_toxic'][user_index]:
+    if data[chat_id]["rating"][user_index] < config.user_toxicity_threshold and not data[chat_id]['is_toxic'][
+        user_index]:
         waring_text = 'очень токсичен. \nЧтобы узнать список токсичных людей, пропишите в чате /get_toxics'
         if data[chat_id]['ban_mode']:
             # ban toxic user
