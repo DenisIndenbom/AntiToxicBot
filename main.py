@@ -26,13 +26,13 @@ sentry_sdk.init(sentry_token, traces_sample_rate=0.35)
 
 bot = telebot.TeleBot(token=telegram_token, threaded=False)
 
-navec_model = Navec.load("navec_hudlit_v1_12B_500K_300d_100q.tar")
+navec_model = Navec.load('navec_hudlit_v1_12B_500K_300d_100q.tar')
 
 tokenizer = WordPunctTokenizer()
 
 if config.NN_mode:
     model = TextClassifierNN(300, 512, 256, 2, navec_model)
-    model.load_state_dict(load_nn("TextClassifierNN.nn", map_location=torch_device('cpu')))
+    model.load_state_dict(load_nn('TextClassifierNN.nn', map_location=torch_device('cpu')))
     model.eval()
     device = torch_device('cuda:0' if config.GPU_mode and cuda.is_available() else 'cpu')
     model.to(device)
@@ -100,10 +100,17 @@ def check_the_message_is_not_from_the_group(message: Message):
     return False
 
 
+def check_is_admin(user_id: int, chat_id: int):
+    for admin in bot.get_chat_administrators(chat_id):
+        if admin.user.id == user_id:
+            return True
+    return False
+
+
 def load_data(path):
     data = None
     try:
-        with open(path, "r") as file:
+        with open(path, 'r') as file:
             data = json.loads(file.read())
     except Exception as e:
         sentry_sdk.capture_exception(e)
@@ -115,24 +122,39 @@ def load_data(path):
 
 
 def save_data(data, path):
-    with open(path, "w") as file:
+    with open(path, 'w') as file:
         file.write(json.dumps(data))
 
 
-def add_chat(message: Message):
-    chat_id = str(message.chat.id)
+def add_chat(chat_id, data):
+    chat_id = str(chat_id)
 
-    data = load_data('users.json')
+    data[chat_id] = copy.deepcopy(data['chat_id_example'])
+    data[chat_id]['ban_mode'] = False
 
-    try:
-        admins = bot.get_chat_administrators(message.chat.id)
-        creator = [admin.user for admin in admins if admin.status == 'creator'][0]
-        data[chat_id] = copy.deepcopy(data['chat_id_example'])
-        data[chat_id]['admin_id'].append(creator.id)
-    except Exception:
-        return
+    return data
 
-    save_data(data, 'users.json')
+
+def create_user(user_id: int, chat_id: str, data):
+    # create user
+    data[chat_id]['user_id'].append(user_id)
+    data[chat_id]['rating'].append(0)
+    data[chat_id]['toxic'].append(0)
+    data[chat_id]['positive'].append(0)
+    data[chat_id]['is_toxic'].append(False)
+    # return data
+    return data
+
+
+def delete_user(user_index: int, chat_id: str, data):
+    # delete user
+    data[chat_id]['user_id'].pop(user_index)
+    data[chat_id]['rating'].pop(user_index)
+    data[chat_id]['toxic'].pop(user_index)
+    data[chat_id]['positive'].pop(user_index)
+    data[chat_id]['is_toxic'].pop(user_index)
+    # return data
+    return data
 
 
 @bot.message_handler(commands=['start'])
@@ -165,60 +187,14 @@ def reset_chat(message: Message):
     data = load_data('users.json')
 
     if chat_id not in data:
-        bot.send_message(message.chat.id, 'Чат уже пересоздан!')
         return
 
-    if message.from_user.id not in data[chat_id]['admin_id']:
+    if not check_is_admin(message.from_user.id, message.chat.id):
         bot.send_message(message.chat.id, f'@{message.from_user.username} вы не админ!')
         return
 
     data.pop(chat_id)
     bot.send_message(message.chat.id, 'Чат пересоздан!')
-
-    save_data(data, 'users.json')
-
-
-@bot.message_handler(commands=['add_admins'])
-def add_admins(message: Message):
-    if check_the_message_is_not_from_the_group(message):
-        return
-
-    chat_id = str(message.chat.id)
-
-    data = load_data('users.json')
-
-    if chat_id not in data:
-        add_chat(message)
-        data = load_data('users.json')
-
-    if message.from_user.id not in data[chat_id]['admin_id']:
-        bot.send_message(message.chat.id, f'@{message.from_user.username} вы не админ!')
-        return
-
-    args = message.text.split()[1:]
-    if len(args) == 0:
-        bot.send_message(message.chat.id, f'Вы не указали пользователей, которых надо добавить')
-        return
-
-    for arg in args:
-        admins = bot.get_chat_administrators(message.chat.id)
-        admin_id = None
-        arg = arg.replace('@', '')
-
-        for admin in admins:
-            if arg == admin.user.username:
-                admin_id = admin.user.id
-                break
-
-        if admin_id is None:
-            bot.send_message(message.chat.id, f'Пользователь {arg} не является админом или его не существует')
-
-        if admin_id not in data[chat_id]['admin_id']:
-            data[chat_id]['admin_id'].append(admin_id)
-        else:
-            bot.send_message(message.chat.id, f'Пользователь {arg} уже является админом')
-
-    bot.send_message(message.chat.id, f'Операция завершена')
 
     save_data(data, 'users.json')
 
@@ -235,7 +211,7 @@ def set_ban_mode(message: Message):
         bot.send_message(message.chat.id, 'Вашего чата нет в базе данных. Пропишите команду /add_chat')
         return
 
-    if message.from_user.id not in data[chat_id]['admin_id']:
+    if not check_is_admin(message.from_user.id, message.chat.id):
         bot.send_message(message.chat.id, f'@{message.from_user.username} вы не админ!')
         return
 
@@ -264,10 +240,10 @@ def get_statistics(message: Message):
     data = load_data('users.json')
 
     if chat_id not in data:
-        bot.send_message(message.chat.id, 'Вашего чата нет в базе данных. Пропишите команду /add_chat')
+        bot.send_message(message.chat.id, 'Статистики пока нет')
         return
 
-    # if message.from_user.id not in data[chat_id]['admin_id']:
+    # if not check_is_admin(message.from_user.id, message.chat.id):
     #     return
 
     users_stat = []
@@ -303,11 +279,8 @@ def get_toxics(message: Message):
     data = load_data('users.json')
 
     if chat_id not in data:
-        bot.send_message(message.chat.id, 'Вашего чата нет в базе данных. Пропишите команду /add_chat')
+        bot.send_message(message.chat.id, 'Токсиков нет')
         return
-
-    # if message.from_user.id not in data[chat_id]['admin_id']:
-    #     return
 
     toxics = ''
     for i in range(len(data[chat_id]['user_id'])):
@@ -332,9 +305,7 @@ def moderate(message: Message):
     data = load_data('users.json')
 
     if chat_id not in data:
-        add_chat(message)
-        # reload users data
-        data = load_data('users.json')
+        data = add_chat(chat_id, data)
 
     # find user in data
     user_index = -1
@@ -345,34 +316,26 @@ def moderate(message: Message):
                 break
     else:
         # create user in data
-        data[chat_id]['user_id'].append(user.id)
-        data[chat_id]["rating"].append(0)
-        data[chat_id]["toxic"].append(0)
-        data[chat_id]["positive"].append(0)
-        data[chat_id]["is_toxic"].append(False)
+        data = create_user(user.id, chat_id, data)
         user_index = len(data[chat_id]['user_id']) - 1
 
     # check the user for toxicity and change rating
     if check_is_toxic(message.text):
-        data[chat_id]["rating"][user_index] -= config.fine_for_toxic
-        data[chat_id]["toxic"][user_index] += 1
+        data[chat_id]['rating'][user_index] -= config.fine_for_toxic
+        data[chat_id]['toxic'][user_index] += 1
     else:
-        data[chat_id]["rating"][user_index] += config.reward_for_positive
-        data[chat_id]["positive"][user_index] += 1
+        data[chat_id]['rating'][user_index] += config.reward_for_positive
+        data[chat_id]['positive'][user_index] += 1
 
     # check that the rating has not exceeded the threshold
-    if data[chat_id]["rating"][user_index] < config.user_toxicity_threshold and not data[chat_id]['is_toxic'][
+    if data[chat_id]['rating'][user_index] < config.user_toxicity_threshold and not data[chat_id]['is_toxic'][
         user_index]:
         waring_text = 'очень токсичен. \nЧтобы узнать список токсичных людей, пропишите в чате /get_toxics'
         if data[chat_id]['ban_mode']:
             # ban toxic user
             waring_text = 'был забанен за токсичность'
 
-            data[chat_id]['user_id'].pop(user_index)
-            data[chat_id]['rating'].pop(user_index)
-            data[chat_id]['toxic'].pop(user_index)
-            data[chat_id]['positive'].pop(user_index)
-            data[chat_id]['is_toxic'].pop(user_index)
+            data = delete_user(user_index,chat_id, data)
 
             try:
                 bot.kick_chat_member(message.chat.id, user.id)
@@ -384,12 +347,12 @@ def moderate(message: Message):
             # set that the user is toxic
             data[chat_id]['is_toxic'][user_index] = True
 
-        for admin_id in data[chat_id]['admin_id']:
+        for admin_id in bot.get_chat_administrators(message.chat.id):
             try:
-                bot.send_message(admin_id, f'Warning: Пользователь @{user.username} {waring_text}')
+                bot.send_message(admin_id.user.id, f'Warning: Пользователь @{user.username} {waring_text}')
             except Exception:
                 pass
-    elif data[chat_id]["rating"][user_index] > config.user_toxicity_threshold and data[chat_id]['is_toxic'][user_index]:
+    elif data[chat_id]['rating'][user_index] > config.user_toxicity_threshold and data[chat_id]['is_toxic'][user_index]:
         # set that the user is not toxic
         data[chat_id]['is_toxic'][user_index] = False
 
