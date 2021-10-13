@@ -335,7 +335,7 @@ def moderate(message: Message):
             # ban toxic user
             waring_text = 'был забанен за токсичность'
 
-            data = delete_user(user_index,chat_id, data)
+            data = delete_user(user_index, chat_id, data)
 
             try:
                 bot.kick_chat_member(message.chat.id, user.id)
