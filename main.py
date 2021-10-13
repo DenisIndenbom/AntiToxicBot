@@ -93,7 +93,7 @@ def check_is_toxic(text):
     return y
 
 
-def check_message_from_the_group(message: Message):
+def check_the_message_is_not_from_the_group(message: Message):
     if message.chat.type != 'group' and message.chat.type != 'supergroup':
         bot.send_message(message.chat.id, 'Эта команда работает только в группах')
         return True
@@ -157,7 +157,7 @@ def github(message: Message):
 
 @bot.message_handler(commands=['reset_chat'])
 def reset_chat(message: Message):
-    if check_message_from_the_group(message):
+    if check_the_message_is_not_from_the_group(message):
         return
 
     chat_id = str(message.chat.id)
@@ -180,15 +180,16 @@ def reset_chat(message: Message):
 
 @bot.message_handler(commands=['add_admins'])
 def add_admins(message: Message):
-    if check_message_from_the_group(message):
+    if check_the_message_is_not_from_the_group(message):
         return
+
     chat_id = str(message.chat.id)
 
     data = load_data('users.json')
 
     if chat_id not in data:
-        bot.send_message(message.chat.id, 'Вашего чата нет в базе данных. Пропишите команду /add_chat')
-        return
+        add_chat(message)
+        data = load_data('users.json')
 
     if message.from_user.id not in data[chat_id]['admin_id']:
         bot.send_message(message.chat.id, f'@{message.from_user.username} вы не админ!')
@@ -224,7 +225,7 @@ def add_admins(message: Message):
 
 @bot.message_handler(commands=['set_ban_mode'])
 def set_ban_mode(message: Message):
-    if check_message_from_the_group(message):
+    if check_the_message_is_not_from_the_group(message):
         return
     chat_id = str(message.chat.id)
 
@@ -255,7 +256,7 @@ def set_ban_mode(message: Message):
 
 @bot.message_handler(commands=['get_statistics'])
 def get_statistics(message: Message):
-    if check_message_from_the_group(message):
+    if check_the_message_is_not_from_the_group(message):
         return
 
     chat_id = str(message.chat.id)
@@ -295,7 +296,7 @@ def get_statistics(message: Message):
 
 @bot.message_handler(commands=['get_toxics'])
 def get_toxics(message: Message):
-    if check_message_from_the_group(message):
+    if check_the_message_is_not_from_the_group(message):
         return
     chat_id = str(message.chat.id)
 
@@ -320,7 +321,7 @@ def get_toxics(message: Message):
 
 @bot.message_handler(content_types=['text'])
 def moderate(message: Message):
-    if check_message_from_the_group(message):
+    if check_the_message_is_not_from_the_group(message):
         return
 
     chat_id = str(message.chat.id)
