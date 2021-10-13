@@ -157,7 +157,7 @@ def reset_chat(message: Message):
     data = load_data('users.json')
 
     if chat_id not in data:
-        bot.send_message(message.chat.id, 'Чата нет в базе данных бота')
+        bot.send_message(message.chat.id, 'Чат уже пересоздан!')
         return
 
     if message.from_user.id not in data[chat_id]['admin_id']:
