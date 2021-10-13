@@ -328,41 +328,41 @@ def moderate(message: Message):
         data = load_data('users.json')
 
     # find user in data
-    index = -1
-    for i, user_id in enumerate(data[chat_id]['user_id']):
-        if user.id == user_id:
-            index = i
-            break
-
-    # create user in data
-    if index == -1:
+    user_index = -1
+    if user.id not in data[chat_id]['user_id']:
+        for i, user_id in enumerate(data[chat_id]['user_id']):
+            if user.id == user_id:
+                user_index = i
+                break
+    else:
+        # create user in data
         data[chat_id]['user_id'].append(user.id)
         data[chat_id]["rating"].append(0)
         data[chat_id]["toxic"].append(0)
         data[chat_id]["positive"].append(0)
         data[chat_id]["is_toxic"].append(False)
-        index = len(data[chat_id]['user_id']) - 1
+        user_index = len(data[chat_id]['user_id']) - 1
 
     # check the user for toxicity and change rating
     if check_is_toxic(message.text):
-        data[chat_id]["rating"][index] -= config.fine_for_toxic
-        data[chat_id]["toxic"][index] += 1
+        data[chat_id]["rating"][user_index] -= config.fine_for_toxic
+        data[chat_id]["toxic"][user_index] += 1
     else:
-        data[chat_id]["rating"][index] += config.reward_for_positive
-        data[chat_id]["positive"][index] += 1
+        data[chat_id]["rating"][user_index] += config.reward_for_positive
+        data[chat_id]["positive"][user_index] += 1
 
     # check that the rating has not exceeded the threshold
-    if data[chat_id]["rating"][index] < config.user_toxicity_threshold and not data[chat_id]['is_toxic'][index]:
-        waring_text = 'очень токсичен. \nЧтобы узнать список токсичных людей, пропишите /get_toxics'
+    if data[chat_id]["rating"][user_index] < config.user_toxicity_threshold and not data[chat_id]['is_toxic'][user_index]:
+        waring_text = 'очень токсичен. \nЧтобы узнать список токсичных людей, пропишите в чате /get_toxics'
         if data[chat_id]['ban_mode']:
             # ban toxic user
             waring_text = 'был забанен за токсичность'
 
-            data[chat_id]['user_id'].pop(index)
-            data[chat_id]['rating'].pop(index)
-            data[chat_id]['toxic'].pop(index)
-            data[chat_id]['positive'].pop(index)
-            data[chat_id]['is_toxic'].pop(index)
+            data[chat_id]['user_id'].pop(user_index)
+            data[chat_id]['rating'].pop(user_index)
+            data[chat_id]['toxic'].pop(user_index)
+            data[chat_id]['positive'].pop(user_index)
+            data[chat_id]['is_toxic'].pop(user_index)
 
             try:
                 bot.kick_chat_member(message.chat.id, user.id)
@@ -372,16 +372,16 @@ def moderate(message: Message):
                                  f'Я не могу банить пользователей. Дайте мне админ права или пропишите /set_ban_mode 0')
         else:
             # set that the user is toxic
-            data[chat_id]['is_toxic'][index] = True
+            data[chat_id]['is_toxic'][user_index] = True
 
         for admin_id in data[chat_id]['admin_id']:
             try:
                 bot.send_message(admin_id, f'Warning: Пользователь @{user.username} {waring_text}')
             except Exception:
                 pass
-    elif data[chat_id]["rating"][index] > config.user_toxicity_threshold and data[chat_id]['is_toxic'][index]:
+    elif data[chat_id]["rating"][user_index] > config.user_toxicity_threshold and data[chat_id]['is_toxic'][user_index]:
         # set that the user is not toxic
-        data[chat_id]['is_toxic'][index] = False
+        data[chat_id]['is_toxic'][user_index] = False
 
     # save user data
     save_data(data, 'users.json')
