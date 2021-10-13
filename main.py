@@ -195,6 +195,7 @@ def reset_chat(message: Message):
 
     data.pop(chat_id)
     bot.send_message(message.chat.id, 'Чат пересоздан!')
+    data = add_chat(chat_id, data)
 
     save_data(data, 'users.json')
 
@@ -208,8 +209,7 @@ def set_ban_mode(message: Message):
     data = load_data('users.json')
 
     if chat_id not in data:
-        bot.send_message(message.chat.id, 'Вашего чата нет в базе данных. Пропишите команду /add_chat')
-        return
+        data = add_chat(chat_id, data)
 
     if not check_is_admin(message.from_user.id, message.chat.id):
         bot.send_message(message.chat.id, f'@{message.from_user.username} вы не админ!')
