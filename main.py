@@ -337,7 +337,7 @@ def moderate(message: Message):
 
     # find user in data
     user_index = -1
-    if user.id not in data[chat_id]['user_id']:
+    if user.id in data[chat_id]['user_id']:
         for i, user_id in enumerate(data[chat_id]['user_id']):
             if user.id == user_id:
                 user_index = i
