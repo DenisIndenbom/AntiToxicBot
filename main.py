@@ -160,9 +160,9 @@ def delete_user(user_index: int, chat_id: str, data):
 @bot.message_handler(commands=['start'])
 def start(message: Message):
     bot.send_message(message.chat.id, 'Привет!\n'
-                                      'Я анти токсик бот. Я против токсичных людей. '
-                                      'Я буду банить их за чрезмерную токсичность или вас предупреждать.\n\n'
-                                      'Просто добавь меня в чат.')
+                                      'Я анти токсик бот. Я против токсичных людей.\n'
+                                      'Я использую нейросети, чтобы находить и предупреждать вас о токсиков в чате.\n\n'
+                                      'Просто добавь меня в чат!')
 
 
 @bot.message_handler(commands=['help'])
