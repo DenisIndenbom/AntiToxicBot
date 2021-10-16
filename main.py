@@ -285,7 +285,10 @@ def get_toxics(message: Message):
     toxics = ''
     for i in range(len(data[chat_id]['user_id'])):
         if data[chat_id]['is_toxic'][i]:
-            toxics += '@' + bot.get_chat_member(chat_id, data[chat_id]['user_id'][i]).user.username + '\n'
+            user = bot.get_chat_member(message.chat.id, data[chat_id]['user_id'][i]).user
+            username = user.username if '@' + user.username is not None else user.last_name + ' ' + user.first_name
+
+            toxics += username + '\n'
 
     toxics = 'Токсиков нет' if toxics == '' else toxics
 
