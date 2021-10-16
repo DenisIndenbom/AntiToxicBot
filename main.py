@@ -297,7 +297,7 @@ def get_toxics(message: Message):
             try:
                 # get username
                 user = bot.get_chat_member(message.chat.id, data[chat_id]['user_id'][i]).user
-                username = user.username if '@' + user.username is not None \
+                username = '@'+user.username if user.username is not None \
                     else user.last_name + ' ' + user.first_name
 
                 # add username to string list of toxics
