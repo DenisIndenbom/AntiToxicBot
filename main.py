@@ -250,7 +250,9 @@ def get_statistics(message: Message):
     for i in range(len(data[chat_id]['user_id'])):
         try:
             user = bot.get_chat_member(message.chat.id, data[chat_id]['user_id'][i]).user
-            username = user.username if user.username is not None else user.last_name + ' ' + user.first_name
+            username = user.username if user.username is not None \
+                else user.last_name + ' ' + user.first_name
+
             users_stat.append([username,
                                'rating ' + str(data[chat_id]['rating'][i]), 'toxic ' + str(data[chat_id]['toxic'][i]),
                                'positive ' + str(data[chat_id]['positive'][i])])
@@ -260,8 +262,10 @@ def get_statistics(message: Message):
     statistics = ''
     for row in users_stat:
         buf = ''
+
         for item in row:
             buf += str(item) + '|'
+
         buf += '\n'
         statistics += buf
 
@@ -283,12 +287,19 @@ def get_toxics(message: Message):
         return
 
     toxics = ''
+
     for i in range(len(data[chat_id]['user_id'])):
         if data[chat_id]['is_toxic'][i]:
-            user = bot.get_chat_member(message.chat.id, data[chat_id]['user_id'][i]).user
-            username = user.username if '@' + user.username is not None else user.last_name + ' ' + user.first_name
+            try:
+                # get username
+                user = bot.get_chat_member(message.chat.id, data[chat_id]['user_id'][i]).user
+                username = user.username if '@' + user.username is not None \
+                    else user.last_name + ' ' + user.first_name
 
-            toxics += username + '\n'
+                # add username to string list of toxics
+                toxics += username + '\n'
+            except Exception:
+                pass
 
     toxics = 'Токсиков нет' if toxics == '' else toxics
 
