@@ -305,7 +305,7 @@ def get_toxics(message: Message):
             except Exception:
                 pass
 
-    toxics = 'Токсиков нет' if toxics == '' else toxics
+    toxics = 'Токсиков нет' if toxics == '' else 'Список токсиков:\n' + toxics
 
     bot.send_message(message.chat.id, toxics)
 
