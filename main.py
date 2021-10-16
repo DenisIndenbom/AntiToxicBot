@@ -176,6 +176,10 @@ def help(message: Message):
 def github(message: Message):
     bot.send_message(message.chat.id, 'Github - https://github.com/DenisIndenbom/AntiToxicBot')
 
+@bot.message_handler(commands=['habr'])
+def github(message: Message):
+    bot.send_message(message.chat.id, 'Статья на хабре - https://habr.com/ru/post/582130/')
+
 
 @bot.message_handler(commands=['reset_chat'])
 def reset_chat(message: Message):
