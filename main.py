@@ -278,8 +278,18 @@ def get_statistics(message: Message):
 
     statistics = 'Статистики пока нет' if statistics == '' else statistics
 
-    bot.send_message(message.chat.id, statistics)
+    statistics_list = statistics.split('\n')
 
+    if len(statistics_list) < 10:
+        bot.send_message(message.chat.id, statistics)
+    else:
+        bot.send_message(message.chat.id, 'Статистика:')
+
+        step = 10
+
+        for i in range(0, len(statistics_list), step):
+            statistics_package = '\n'.join(statistics_list[i:i+step])
+            bot.send_message(message.chat.id, statistics_package)
 
 @bot.message_handler(commands=['get_toxics'])
 def get_toxics(message: Message):
