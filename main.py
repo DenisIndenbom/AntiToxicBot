@@ -224,11 +224,11 @@ def set_ban_mode(message: Message):
     except IndexError:
         bot.send_message(message.chat.id, 'Вы не указали состояние режима')
         return
-    
+
     try:
         ban_mode = bool(int(arg))
     except (IndexError, ValueError):
-        bot.send_message(message.chat.id, f'Ошибка: Не правильно задан аргумент. Это должен быть число 0 или 1, а не "{arg}"')
+        bot.send_message(message.chat.id, f'Ошибка: Не правильно задан аргумент. Это должно быть число 0 или 1, а не "{arg}"')
         return
 
     data[chat_id]['ban_mode'] = ban_mode
