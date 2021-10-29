@@ -1,6 +1,6 @@
 /navec_hudlit_v1_12B_500K_300d_100q.tar
-/ToxicClassifier.model
+/TextTonalityClassifierCatBoost.model
 /telegramBotAPIToken.py
-/TextClassifierNN.nn
+/TextTonalityClassifierNN.nn
 /users.json
 /sentryToken.py

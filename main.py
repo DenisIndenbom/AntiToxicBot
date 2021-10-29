@@ -32,13 +32,13 @@ tokenizer = WordPunctTokenizer()
 
 if config.NN_mode:
     model = TextClassifierNN(300, 512, 256, 2, navec_model)
-    model.load_state_dict(load_nn('TextClassifierNN.nn', map_location=torch_device('cpu')))
+    model.load_state_dict(load_nn('TextTonalityClassifierNN.nn', map_location=torch_device('cpu')))
     model.eval()
     device = torch_device('cuda:0' if config.GPU_mode and cuda.is_available() else 'cpu')
     model.to(device)
 else:
     model = CatBoostClassifier()
-    model.load_model('ToxicClassifier.model', format='cbm')
+    model.load_model('TextTonalityClassifierCatBoost.model', format='cbm')
 
 rules_clf = RulesClassifier(config.bad_words, config.message_toxicity_threshold)
 
