@@ -43,7 +43,7 @@ else:
 rules_clf = RulesClassifier(config.bad_words, config.message_toxicity_threshold)
 
 
-def get_text_indexes(words, word_model):
+def get_text_indexes(words, word_model) -> np.array:
     indexes = []
 
     for word in words:
@@ -55,14 +55,14 @@ def get_text_indexes(words, word_model):
     return np.array(indexes, dtype=np.int64)
 
 
-def add_zero_indexes(ind, max_text_ind_len):
+def add_zero_indexes(ind, max_text_ind_len) -> np.array:
     if len(ind) < max_text_ind_len:
         z_arr = np.zeros((max_text_ind_len - len(ind)), dtype=np.int64).T
         ind = np.concatenate((ind, z_arr), axis=0)
     return ind
 
 
-def get_text_embedding(words, word_model):
+def get_text_embedding(words, word_model) -> np.array:
     # get text embedding, simply averaging embeddings of words in it
     vec = []
     for word in words:
@@ -73,7 +73,7 @@ def get_text_embedding(words, word_model):
     return np.array(vec).mean(axis=0)
 
 
-def check_is_toxic(text):
+def check_is_toxic(text: str) -> bool:
     tokenized_data = tokenizer.tokenize(text.lower())
 
     if bool(rules_clf.predict([tokenized_data])[0].tolist()):
@@ -93,21 +93,21 @@ def check_is_toxic(text):
     return y
 
 
-def check_the_message_is_not_from_the_group(message: Message):
+def check_the_message_is_not_from_the_group(message: Message) -> bool:
     if message.chat.type != 'group' and message.chat.type != 'supergroup':
         bot.send_message(message.chat.id, 'Эта команда работает только в группах')
         return True
     return False
 
 
-def check_is_admin(user_id: int, chat_id: int):
+def check_is_admin(user_id: int, chat_id: int) -> bool:
     for admin in bot.get_chat_administrators(chat_id):
         if admin.user.id == user_id:
             return True
     return False
 
 
-def load_data(path):
+def load_data(path: str) -> dict:
     data = None
     try:
         with open(path, 'r') as file:
@@ -121,12 +121,12 @@ def load_data(path):
     return data
 
 
-def save_data(data, path):
+def save_data(data: dict, path: str) -> None:
     with open(path, 'w') as file:
         file.write(json.dumps(data))
 
 
-def add_chat(chat_id, data):
+def add_chat(chat_id: str, data: dict) -> dict:
     chat_id = str(chat_id)
 
     data[chat_id] = copy.deepcopy(data['chat_id_example'])
@@ -135,7 +135,7 @@ def add_chat(chat_id, data):
     return data
 
 
-def create_user(user_id: int, chat_id: str, data):
+def create_user(user_id: int, chat_id: str, data) -> dict:
     # create user
     data[chat_id]['user_id'].append(user_id)
     data[chat_id]['rating'].append(0)
@@ -146,7 +146,7 @@ def create_user(user_id: int, chat_id: str, data):
     return data
 
 
-def delete_user(user_index: int, chat_id: str, data):
+def delete_user(user_index: int, chat_id: str, data) -> dict:
     # delete user
     data[chat_id]['user_id'].pop(user_index)
     data[chat_id]['rating'].pop(user_index)
@@ -158,7 +158,7 @@ def delete_user(user_index: int, chat_id: str, data):
 
 
 @bot.message_handler(commands=['start'])
-def start(message: Message):
+def start(message: Message) -> None:
     bot.send_message(message.chat.id, 'Привет!\n'
                                       'Я анти токсик бот. Я против токсичных людей.\n'
                                       'Я использую нейросети, чтобы находить и предупреждать вас о токсиков в чате.\n\n'
@@ -166,23 +166,23 @@ def start(message: Message):
 
 
 @bot.message_handler(commands=['help'])
-def help(message: Message):
+def help(message: Message) -> None:
     with open('help.txt', 'r', encoding='utf-8-sig') as file:
         help_text = file.read()
     bot.send_message(message.chat.id, help_text)
 
 
 @bot.message_handler(commands=['github'])
-def github(message: Message):
+def github(message: Message) -> None:
     bot.send_message(message.chat.id, 'Github - https://github.com/DenisIndenbom/AntiToxicBot')
 
 @bot.message_handler(commands=['habr'])
-def github(message: Message):
+def github(message: Message) -> None:
     bot.send_message(message.chat.id, 'Статья на хабре - https://habr.com/ru/post/582130/')
 
 
 @bot.message_handler(commands=['reset_chat'])
-def reset_chat(message: Message):
+def reset_chat(message: Message) -> None:
     if check_the_message_is_not_from_the_group(message):
         return
 
@@ -205,7 +205,7 @@ def reset_chat(message: Message):
 
 
 @bot.message_handler(commands=['set_ban_mode'])
-def set_ban_mode(message: Message):
+def set_ban_mode(message: Message) -> None:
     if check_the_message_is_not_from_the_group(message):
         return
     chat_id = str(message.chat.id)
