@@ -62,8 +62,8 @@ def add_zero_indexes(ind, max_text_ind_len) -> np.array:
     return ind
 
 
+# get text embedding, simply averaging embeddings of words in it
 def get_text_embedding(words, word_model) -> np.array:
-    # get text embedding, simply averaging embeddings of words in it
     vec = []
     for word in words:
         try:
@@ -73,6 +73,7 @@ def get_text_embedding(words, word_model) -> np.array:
     return np.array(vec).mean(axis=0)
 
 
+# check the text for toxicity
 def check_is_toxic(text: str) -> bool:
     tokenized_data = tokenizer.tokenize(text.lower())
 
@@ -93,6 +94,7 @@ def check_is_toxic(text: str) -> bool:
     return y
 
 
+# check the message is not from the group
 def check_the_message_is_not_from_the_group(message: Message) -> bool:
     if message.chat.type != 'group' and message.chat.type != 'supergroup':
         bot.send_message(message.chat.id, 'Эта команда работает только в группах')
@@ -100,6 +102,7 @@ def check_the_message_is_not_from_the_group(message: Message) -> bool:
     return False
 
 
+# check that the user is the admin of the group
 def check_is_admin(user_id: int, chat_id: int) -> bool:
     for admin in bot.get_chat_administrators(chat_id):
         if admin.user.id == user_id:
@@ -107,6 +110,7 @@ def check_is_admin(user_id: int, chat_id: int) -> bool:
     return False
 
 
+# load data from json
 def load_data(path: str) -> dict:
     data = None
     try:
@@ -121,11 +125,13 @@ def load_data(path: str) -> dict:
     return data
 
 
+# save data to json
 def save_data(data: dict, path: str) -> None:
     with open(path, 'w') as file:
         file.write(json.dumps(data))
 
 
+# add chat to data
 def add_chat(chat_id: str, data: dict) -> dict:
     chat_id = str(chat_id)
 
@@ -134,7 +140,7 @@ def add_chat(chat_id: str, data: dict) -> dict:
 
     return data
 
-
+# create user in the data
 def create_user(user_id: int, chat_id: str, data) -> dict:
     # create user
     data[chat_id]['user_id'].append(user_id)
@@ -145,7 +151,7 @@ def create_user(user_id: int, chat_id: str, data) -> dict:
     # return data
     return data
 
-
+# delete user from the data
 def delete_user(user_index: int, chat_id: str, data) -> dict:
     # delete user
     data[chat_id]['user_id'].pop(user_index)
@@ -175,6 +181,7 @@ def help(message: Message) -> None:
 @bot.message_handler(commands=['github'])
 def github(message: Message) -> None:
     bot.send_message(message.chat.id, 'Github - https://github.com/DenisIndenbom/AntiToxicBot')
+
 
 @bot.message_handler(commands=['habr'])
 def github(message: Message) -> None:
@@ -228,7 +235,8 @@ def set_ban_mode(message: Message) -> None:
     try:
         ban_mode = bool(int(arg))
     except (IndexError, ValueError):
-        bot.send_message(message.chat.id, f'Ошибка: Не правильно задан аргумент. Это должно быть число 0 или 1, а не "{arg}"')
+        bot.send_message(message.chat.id,
+                         f'Ошибка: Не правильно задан аргумент. Это должно быть число 0 или 1, а не "{arg}"')
         return
 
     data[chat_id]['ban_mode'] = ban_mode
@@ -289,11 +297,12 @@ def get_statistics(message: Message):
         step = 10
 
         for i in range(0, len(statistics_list), step):
-            statistics_package = '\n'.join(statistics_list[i:i+step])
+            statistics_package = '\n'.join(statistics_list[i:i + step])
             try:
                 bot.send_message(message.chat.id, statistics_package)
             except:
                 pass
+
 
 @bot.message_handler(commands=['get_toxics'])
 def get_toxics(message: Message):
@@ -314,7 +323,7 @@ def get_toxics(message: Message):
             try:
                 # get username
                 user = bot.get_chat_member(message.chat.id, data[chat_id]['user_id'][i]).user
-                username = '@'+user.username if user.username is not None \
+                username = '@' + user.username if user.username is not None \
                     else user.last_name + ' ' + user.first_name
 
                 # add username to string list of toxics
