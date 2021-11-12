@@ -15,7 +15,7 @@ class RulesClassifier:
     """
     valid_symbols_re = re.compile('[^a-zа-я]', flags=re.IGNORECASE)
 
-    def __init__(self, bad_words: list, bad_word_threshold=0.75):
+    def __init__(self, bad_words: list, bad_word_threshold=0.75) -> None:
         """
         :param bad_words: list of bad words
         :param bad_word_threshold: float in the range 0 to 1
@@ -23,14 +23,14 @@ class RulesClassifier:
         self.list_of_bad_words = bad_words
         self.bad_word_threshold = bad_word_threshold
 
-    def clear_text(self, text: str):
+    def clear_text(self, text: str) -> str:
         """
         :param text: str
         :return: clean text
         """
         return self.valid_symbols_re.sub('', text)
 
-    def predict(self, x: list):
+    def predict(self, x: list) -> np.array:
         """
         :param x: input 2d list with the str. Example [['Hello','my',friends'],['My','name','is','Jack']]
 
@@ -55,14 +55,14 @@ class RulesClassifier:
 
 
 class CBClassifier:
-    def __init__(self, model_path: str):
+    def __init__(self, model_path: str) -> None:
         """
         :param model_path: path to catboost model
         """
         self.cb_clf = CatBoostClassifier()
         self.cb_clf.load_model(model_path, format='cbm')
 
-    def predict(self, x):
+    def predict(self, x) -> np.array:
         """
         :param x: input 1d array-like or 2d array-like.
         :return: numpy array with predictions.
@@ -75,7 +75,7 @@ class TextClassifierNN(torch.nn.Module):
     """
         Neural network model for the classification of text tonality
     """
-    def __init__(self, embedding_dim, gru_hidden_size, fc_hidden_size, output_size, navec):
+    def __init__(self, embedding_dim: int, gru_hidden_size: int, fc_hidden_size: int, output_size: int, navec) -> None:
         """
         :param embedding_dim: embedding dim
         :param gru_hidden_size: gru hidden size
@@ -104,7 +104,7 @@ class TextClassifierNN(torch.nn.Module):
 
         self.fc2 = torch.nn.Linear(fc_hidden_size, output_size)
 
-    def forward(self, x):
+    def forward(self, x: torch.tensor) -> torch.tensor:
         x = self.embedding(x)
 
         x = x.permute((0, 2, 1))
@@ -133,5 +133,5 @@ class TextClassifierNN(torch.nn.Module):
 
         return x
 
-    def predict(self, x):
+    def predict(self, x: torch.tensor) -> torch.tensor:
         return self.softmax(self.forward(x))
