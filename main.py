@@ -1,3 +1,5 @@
+import config
+
 import telebot
 from telebot.types import Message, User
 
@@ -15,16 +17,11 @@ import numpy as np
 import json
 import copy
 
-import config
-
-from telegramBotAPIToken import telegram_token
-
 import sentry_sdk
-from sentryToken import sentry_token
 
-sentry_sdk.init(sentry_token, traces_sample_rate=0.35)
+sentry_sdk.init(config.sentryToken, traces_sample_rate=0.35)
 
-bot = telebot.TeleBot(token=telegram_token, threaded=False)
+bot = telebot.TeleBot(token=config.telegram_token, threaded=False)
 
 navec_model = Navec.load('navec_hudlit_v1_12B_500K_300d_100q.tar')
 
@@ -140,6 +137,7 @@ def add_chat(chat_id: str, data: dict) -> dict:
 
     return data
 
+
 # create user in the data
 def create_user(user_id: int, chat_id: str, data) -> dict:
     # create user
@@ -150,6 +148,7 @@ def create_user(user_id: int, chat_id: str, data) -> dict:
     data[chat_id]['is_toxic'].append(False)
     # return data
     return data
+
 
 # delete user from the data
 def delete_user(user_index: int, chat_id: str, data) -> dict:
@@ -258,9 +257,6 @@ def get_statistics(message: Message):
     if chat_id not in data:
         bot.send_message(message.chat.id, 'Статистики пока нет')
         return
-
-    # if not check_is_admin(message.from_user.id, message.chat.id):
-    #     return
 
     users_stat = []
     for i in range(len(data[chat_id]['user_id'])):

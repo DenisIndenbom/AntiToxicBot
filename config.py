@@ -1,3 +1,6 @@
+import telegramBotAPIToken
+import sentryToken
+
 user_toxicity_threshold = -5
 
 message_toxicity_threshold = 0.7
@@ -12,3 +15,6 @@ reward_for_positive = 0.25
 NN_mode = True
 
 GPU_mode = True
+
+telegram_token = telegramBotAPIToken.telegram_token
+sentryToken = sentryToken.sentry_token
