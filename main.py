@@ -94,7 +94,7 @@ def check_is_toxic(text: str) -> bool:
 # check the message is not from the group
 def check_the_message_is_not_from_the_group(message: Message) -> bool:
     if message.chat.type != 'group' and message.chat.type != 'supergroup':
-        bot.send_message(message.chat.id, 'Эта команда работает только в группах')
+        send_message(bot, message.chat.id, 'Эта команда работает только в группах')
         return True
     return False
 
@@ -162,29 +162,36 @@ def delete_user(user_index: int, chat_id: str, data) -> dict:
     return data
 
 
+def send_message(client, recipient_id, msg_text):
+    try:
+        client.send_message(recipient_id, msg_text)
+    except Exception:
+        pass
+
+
 @bot.message_handler(commands=['start'])
 def start(message: Message) -> None:
-    bot.send_message(message.chat.id, 'Привет!\n'
-                                      'Я анти токсик бот. Я против токсичных людей.\n'
-                                      'Я использую нейросети, чтобы находить и предупреждать вас о токсиков в чате.\n\n'
-                                      'Просто добавь меня в чат!')
+    send_message(bot, message.chat.id, 'Привет!\n'
+                                       'Я анти токсик бот. Я против токсичных людей.\n'
+                                       'Я использую нейросети, чтобы находить и предупреждать вас о токсиков в чате.\n\n'
+                                       'Просто добавь меня в чат!')
 
 
 @bot.message_handler(commands=['help'])
 def help(message: Message) -> None:
     with open('help.txt', 'r', encoding='utf-8-sig') as file:
         help_text = file.read()
-    bot.send_message(message.chat.id, help_text)
+    send_message(bot, message.chat.id, help_text)
 
 
 @bot.message_handler(commands=['github'])
 def github(message: Message) -> None:
-    bot.send_message(message.chat.id, 'Github - https://github.com/DenisIndenbom/AntiToxicBot')
+    send_message(bot, message.chat.id, 'Github - https://github.com/DenisIndenbom/AntiToxicBot')
 
 
 @bot.message_handler(commands=['habr'])
 def github(message: Message) -> None:
-    bot.send_message(message.chat.id, 'Статья на хабре - https://habr.com/ru/post/582130/')
+    send_message(bot, message.chat.id, 'Статья на хабре - https://habr.com/ru/post/582130/')
 
 
 @bot.message_handler(commands=['reset_chat'])
@@ -200,11 +207,11 @@ def reset_chat(message: Message) -> None:
         return
 
     if not check_is_admin(message.from_user.id, message.chat.id):
-        bot.send_message(message.chat.id, f'@{message.from_user.username} вы не админ!')
+        send_message(bot, message.chat.id, f'@{message.from_user.username} вы не админ!')
         return
 
     data.pop(chat_id)
-    bot.send_message(message.chat.id, 'Чат пересоздан!')
+    send_message(bot, message.chat.id, 'Чат пересоздан!')
     data = add_chat(chat_id, data)
 
     save_data(data, 'users.json')
@@ -222,25 +229,25 @@ def set_ban_mode(message: Message) -> None:
         data = add_chat(chat_id, data)
 
     if not check_is_admin(message.from_user.id, message.chat.id):
-        bot.send_message(message.chat.id, f'@{message.from_user.username} вы не админ!')
+        send_message(bot, message.chat.id, f'@{message.from_user.username} вы не админ!')
         return
 
     try:
         arg = message.text.split()[1]
     except IndexError:
-        bot.send_message(message.chat.id, 'Вы не указали состояние режима')
+        send_message(bot, message.chat.id, 'Вы не указали состояние режима')
         return
 
     try:
         ban_mode = bool(int(arg))
     except (IndexError, ValueError):
-        bot.send_message(message.chat.id,
-                         f'Ошибка: Не правильно задан аргумент. Это должно быть число 0 или 1, а не "{arg}"')
+        send_message(bot, message.chat.id,
+                     f'Ошибка: Не правильно задан аргумент. Это должно быть число 0 или 1, а не "{arg}"')
         return
 
     data[chat_id]['ban_mode'] = ban_mode
 
-    bot.send_message(message.chat.id, f'ban_mode {int(ban_mode)}')
+    send_message(bot, message.chat.id, f'ban_mode {int(ban_mode)}')
 
     save_data(data, 'users.json')
 
@@ -255,7 +262,7 @@ def get_statistics(message: Message):
     data = load_data('users.json')
 
     if chat_id not in data:
-        bot.send_message(message.chat.id, 'Статистики пока нет')
+        send_message(bot, message.chat.id, 'Статистики пока нет')
         return
 
     users_stat = []
@@ -286,18 +293,16 @@ def get_statistics(message: Message):
     statistics_list = statistics.split('\n')
 
     if len(statistics_list) < 10:
-        bot.send_message(message.chat.id, statistics)
+        send_message(bot, message.chat.id, statistics)
     else:
-        bot.send_message(message.chat.id, 'Статистика:')
+        send_message(bot, message.chat.id, 'Статистика:')
 
         step = 10
 
         for i in range(0, len(statistics_list), step):
             statistics_package = '\n'.join(statistics_list[i:i + step])
-            try:
-                bot.send_message(message.chat.id, statistics_package)
-            except:
-                pass
+
+            send_message(bot, message.chat.id, statistics_package)
 
 
 @bot.message_handler(commands=['get_toxics'])
@@ -309,7 +314,7 @@ def get_toxics(message: Message):
     data = load_data('users.json')
 
     if chat_id not in data:
-        bot.send_message(message.chat.id, 'Токсиков нет')
+        send_message(bot, message.chat.id, 'Токсиков нет')
         return
 
     toxics = ''
@@ -329,7 +334,32 @@ def get_toxics(message: Message):
 
     toxics = 'Токсиков нет' if toxics == '' else 'Список токсиков:\n' + toxics
 
-    bot.send_message(message.chat.id, toxics)
+    toxics_list = toxics.split('\n')
+
+    if len(toxics_list) < 10:
+        send_message(bot, message.chat.id, toxics)
+    else:
+        send_message(bot, message.chat.id, 'Статистика:')
+
+        step = 10
+
+        for i in range(0, len(toxics_list), step):
+            toxics_package = '\n'.join(toxics_list[i:i + step])
+
+            send_message(bot, message.chat.id, toxics_package)
+
+
+@bot.message_handler(commands=['feedback'])
+def feedback(message: Message):
+    text = message.text.split(maxsplit=1)[1:][0]
+
+    with open('reports.txt', 'a', encoding='utf-8-sig') as file:
+        username = message.from_user.username
+        username = username if username is not None else message.from_user.last_name + ' ' + message.from_user.first_name
+
+        file.write(username + ': ' + text[:300] + '\n')
+
+    send_message(bot, message.chat.id, 'Спасибо за feedback!')
 
 
 @bot.message_handler(content_types=['text'])
@@ -379,19 +409,17 @@ def moderate(message: Message):
 
             try:
                 bot.kick_chat_member(message.chat.id, user.id)
-                bot.send_message(message.chat.id, f'Пользователь @{user.username} {waring_text}')
+                send_message(bot, message.chat.id, f'Пользователь @{user.username} {waring_text}')
             except Exception:
-                bot.send_message(message.chat.id,
-                                 f'Я не могу банить пользователей. Дайте мне админ права или пропишите /set_ban_mode 0')
+                send_message(bot, message.chat.id,
+                             f'Я не могу банить пользователей. Дайте мне админ права или пропишите /set_ban_mode 0')
         else:
             # set that the user is toxic
             data[chat_id]['is_toxic'][user_index] = True
 
         for admin_id in bot.get_chat_administrators(message.chat.id):
-            try:
-                bot.send_message(admin_id.user.id, f'Warning: Пользователь @{user.username} {waring_text}')
-            except Exception:
-                pass
+            send_message(bot, admin_id.user.id, f'Warning: Пользователь @{user.username} {waring_text}')
+
     elif data[chat_id]['rating'][user_index] > config.user_toxicity_threshold and data[chat_id]['is_toxic'][user_index]:
         # set that the user is not toxic
         data[chat_id]['is_toxic'][user_index] = False
