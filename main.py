@@ -351,13 +351,19 @@ def get_toxics(message: Message):
 
 @bot.message_handler(commands=['feedback'])
 def feedback(message: Message):
-    text = message.text.split(maxsplit=1)[1:][0]
+    split_text = message.text.split(maxsplit=1)
+
+    if len(split_text) <= 1:
+        send_message(bot, message.chat.id, "Вы не написали feedback!")
+        return
+
+    feedback_text = split_text[1:][0]
 
     with open('reports.txt', 'a', encoding='utf-8-sig') as file:
         username = message.from_user.username
         username = username if username is not None else message.from_user.last_name + ' ' + message.from_user.first_name
 
-        file.write(username + ': ' + text[:300] + '\n')
+        file.write(username + ': ' + feedback_text[:300] + '\n')
 
     send_message(bot, message.chat.id, 'Спасибо за feedback!')
 
