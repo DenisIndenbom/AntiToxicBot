@@ -5,8 +5,9 @@ from telebot.types import Message, User
 
 from nltk.tokenize import WordPunctTokenizer
 from navec import Navec
+from pyaspeller import YandexSpeller
 
-from textTonalityClassifier import RulesClassifier, TextClassifierNN, CatBoostClassifier
+from textTonalityClassifier import TextClassifierNN, CatBoostClassifier
 
 from torch import load as load_nn
 from torch import device as torch_device
@@ -27,6 +28,8 @@ navec_model = Navec.load('navec_hudlit_v1_12B_500K_300d_100q.tar')
 
 tokenizer = WordPunctTokenizer()
 
+speller = YandexSpeller()
+
 if config.NN_mode:
     model = TextClassifierNN(300, 512, 256, 2, navec_model)
     model.load_state_dict(load_nn('TextTonalityClassifierNN.nn', map_location=torch_device('cpu')))
@@ -37,7 +40,7 @@ else:
     model = CatBoostClassifier()
     model.load_model('TextTonalityClassifierCatBoost.model', format='cbm')
 
-rules_clf = RulesClassifier(config.bad_words, config.message_toxicity_threshold)
+#rules_clf = RulesClassifier(config.bad_words, config.message_toxicity_threshold)
 
 
 def get_text_indexes(words, word_model) -> np.array:
@@ -72,10 +75,12 @@ def get_text_embedding(words, word_model) -> np.array:
 
 # check the text for toxicity
 def check_is_toxic(text: str) -> bool:
-    tokenized_data = tokenizer.tokenize(text.lower())
+    fixed_text = speller.spelled(text)
 
-    if bool(rules_clf.predict([tokenized_data])[0].tolist()):
-        return True
+    tokenized_data = tokenizer.tokenize(fixed_text.lower())
+
+    # if bool(rules_clf.predict([tokenized_data])[0].tolist()):
+    #     return True
 
     if config.NN_mode:
         x = get_text_indexes(tokenized_data, navec_model)
