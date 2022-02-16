@@ -40,8 +40,6 @@ else:
     model = CatBoostClassifier()
     model.load_model('TextTonalityClassifierCatBoost.model', format='cbm')
 
-#rules_clf = RulesClassifier(config.bad_words, config.message_toxicity_threshold)
-
 
 def get_text_indexes(words, word_model) -> np.array:
     indexes = []
@@ -77,10 +75,10 @@ def get_text_embedding(words, word_model) -> np.array:
 def check_is_toxic(text: str) -> bool:
     fixed_text = speller.spelled(text)
 
-    tokenized_data = tokenizer.tokenize(fixed_text.lower())
+    if len(fixed_text) == 0:
+        fixed_text = text
 
-    # if bool(rules_clf.predict([tokenized_data])[0].tolist()):
-    #     return True
+    tokenized_data = tokenizer.tokenize(fixed_text.lower())
 
     if config.NN_mode:
         x = get_text_indexes(tokenized_data, navec_model)
@@ -90,7 +88,7 @@ def check_is_toxic(text: str) -> bool:
         y = float(probability_of_toxicity) > config.message_toxicity_threshold
     else:
         x = get_text_embedding(tokenized_data, navec_model)
-        y = model.predict(x)
+        y = model.predict(x.astype(int))
         y = bool(y)
 
     return y
@@ -99,7 +97,6 @@ def check_is_toxic(text: str) -> bool:
 # check the message is not from the group
 def check_the_message_is_not_from_the_group(message: Message) -> bool:
     if message.chat.type != 'group' and message.chat.type != 'supergroup':
-        send_message(bot, message.chat.id, 'Эта команда работает только в группах')
         return True
     return False
 
@@ -225,7 +222,9 @@ def reset_chat(message: Message) -> None:
 @bot.message_handler(commands=['set_ban_mode'])
 def set_ban_mode(message: Message) -> None:
     if check_the_message_is_not_from_the_group(message):
+        send_message(bot, message.chat.id, 'Эта команда работает только в группах')
         return
+
     chat_id = str(message.chat.id)
 
     data = load_data('users.json')
@@ -260,6 +259,7 @@ def set_ban_mode(message: Message) -> None:
 @bot.message_handler(commands=['get_statistics'])
 def get_statistics(message: Message):
     if check_the_message_is_not_from_the_group(message):
+        send_message(bot, message.chat.id, 'Эта команда работает только в группах')
         return
 
     chat_id = str(message.chat.id)
@@ -313,6 +313,7 @@ def get_statistics(message: Message):
 @bot.message_handler(commands=['get_toxics'])
 def get_toxics(message: Message):
     if check_the_message_is_not_from_the_group(message):
+        send_message(bot, message.chat.id, 'Эта команда работает только в группах')
         return
     chat_id = str(message.chat.id)
 
@@ -439,4 +440,4 @@ def moderate(message: Message):
     save_data(data, 'users.json')
 
 
-bot.infinity_polling(timeout=15)
+bot.polling(none_stop=False)
