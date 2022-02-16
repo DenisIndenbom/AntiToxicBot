@@ -1,7 +1,8 @@
-//навес_худлит_v1_12B_500К_300d_100к.тар
+/navec_hudlit_v1_12B_500K_300d_100q.tar
 /TextTonalityClassifierCatBoost.model
-/TextTonalityClassifierNN.nn
+/TextTonalityClassifier.nn
 /telegramBotAPIToken.py
 /sentryToken.py
 /users.json
 /requirements.txt
+/reports.txt
