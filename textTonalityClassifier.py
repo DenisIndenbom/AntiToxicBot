@@ -5,7 +5,7 @@ from fuzzywuzzy import process, fuzz
 
 from catboost import CatBoostClassifier
 
-import torch
+from torch import nn, tensor
 from slovnet.model.emb import NavecEmbedding
 
 
@@ -71,7 +71,7 @@ class CBClassifier:
         return x
 
 
-class TextClassifierNN(torch.nn.Module):
+class TextClassifierNN(nn.Module):
     """
         Neural network model for the classification of text tonality
     """
@@ -85,26 +85,26 @@ class TextClassifierNN(torch.nn.Module):
         """
         super(TextClassifierNN, self).__init__()
 
-        self.relu = torch.nn.ReLU()
+        self.relu = nn.ReLU()
 
-        self.softmax = torch.nn.Softmax(dim=1)
+        self.softmax = nn.Softmax(dim=1)
 
-        self.embedding = NavecEmbedding(navec)  # torch.nn.Embedding(input_size, embedding_dim)
+        self.embedding = NavecEmbedding(navec)  # nn.Embedding(input_size, embedding_dim)
 
-        #weights = torch.FloatTensor(model.vectors)
-        #self.embedding = torch.nn.Embedding.from_pretrained(weights)
+        #weights = FloatTensor(model.vectors)
+        #self.embedding = nn.Embedding.from_pretrained(weights)
 
-        self.conv1 = torch.nn.Conv1d(embedding_dim, 512, kernel_size=(5,), padding=2)
-        self.conv2 = torch.nn.Conv1d(512, 1024, kernel_size=(3,), padding=1)
-        self.conv3 = torch.nn.Conv1d(1024, 2048, kernel_size=(5,), padding=2)
+        self.conv1 = nn.Conv1d(embedding_dim, 512, kernel_size=(5,), padding=2)
+        self.conv2 = nn.Conv1d(512, 1024, kernel_size=(3,), padding=1)
+        self.conv3 = nn.Conv1d(1024, 2048, kernel_size=(5,), padding=2)
 
-        self.gru = torch.nn.GRU(2048, gru_hidden_size, batch_first=True)
+        self.gru = nn.GRU(2048, gru_hidden_size, batch_first=True)
 
-        self.fc1 = torch.nn.Linear(gru_hidden_size, fc_hidden_size)
+        self.fc1 = nn.Linear(gru_hidden_size, fc_hidden_size)
 
-        self.fc2 = torch.nn.Linear(fc_hidden_size, output_size)
+        self.fc2 = nn.Linear(fc_hidden_size, output_size)
 
-    def forward(self, x: torch.tensor) -> torch.tensor:
+    def forward(self, x: tensor) -> tensor:
         x = self.embedding(x)
 
         x = x.permute((0, 2, 1))
@@ -133,5 +133,5 @@ class TextClassifierNN(torch.nn.Module):
 
         return x
 
-    def predict(self, x: torch.tensor) -> torch.tensor:
+    def predict(self, x: tensor) -> tensor:
         return self.softmax(self.forward(x))

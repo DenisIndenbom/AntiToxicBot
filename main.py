@@ -5,13 +5,13 @@ from telebot.types import Message, User
 
 from nltk.tokenize import WordPunctTokenizer
 from navec import Navec
-from pyaspeller import YandexSpeller
 
 from textTonalityClassifier import TextClassifierNN, CBClassifier
 
 from torch import load as load_nn
 from torch import device as torch_device
 from torch import LongTensor, cuda
+from torch import no_grad
 
 import numpy as np
 
@@ -27,8 +27,6 @@ bot = telebot.TeleBot(token=config.telegram_token, threaded=False)
 navec_model = Navec.load('navec_hudlit_v1_12B_500K_300d_100q.tar')
 
 tokenizer = WordPunctTokenizer()
-
-speller = YandexSpeller()
 
 if config.NN_mode:
     model = TextClassifierNN(300, 512, 256, 2, navec_model)
@@ -73,18 +71,15 @@ def get_text_embedding(words, word_model) -> np.array:
 
 # check the text for toxicity
 def check_is_toxic(text: str) -> bool:
-    fixed_text = speller.spelled(text)
-
-    if len(fixed_text) == 0:
-        fixed_text = text
-
-    tokenized_data = tokenizer.tokenize(fixed_text.lower())
+    tokenized_data = tokenizer.tokenize(text.lower())
 
     if config.NN_mode:
         x = get_text_indexes(tokenized_data, navec_model)
-        x = LongTensor(x).to(device)
-        x = x.unsqueeze(0)
-        probability_of_toxicity = model.predict(x)[0][1]  # we take the predicted probability of toxicity
+        with no_grad():
+            x = LongTensor(x).to(device)
+            x = x.unsqueeze(0)
+            probability_of_toxicity = model.predict(x)[0][1]  # we take the predicted probability of toxicity
+
         y = float(probability_of_toxicity) > config.message_toxicity_threshold
     else:
         x = get_text_embedding(tokenized_data, navec_model)
