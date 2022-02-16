@@ -7,7 +7,7 @@ from nltk.tokenize import WordPunctTokenizer
 from navec import Navec
 from pyaspeller import YandexSpeller
 
-from textTonalityClassifier import TextClassifierNN, CatBoostClassifier
+from textTonalityClassifier import TextClassifierNN, CBClassifier
 
 from torch import load as load_nn
 from torch import device as torch_device
@@ -37,8 +37,7 @@ if config.NN_mode:
     device = torch_device('cuda:0' if config.GPU_mode and cuda.is_available() else 'cpu')
     model.to(device)
 else:
-    model = CatBoostClassifier()
-    model.load_model('TextTonalityClassifierCatBoost.model', format='cbm')
+    model = CBClassifier('TextTonalityClassifierCatBoost.model')
 
 
 def get_text_indexes(words, word_model) -> np.array:
@@ -68,7 +67,8 @@ def get_text_embedding(words, word_model) -> np.array:
             vec.append(word_model[word])
         except KeyError:
             vec.append(np.zeros(300))
-    return np.array(vec).mean(axis=0)
+
+    return np.array(vec).mean(axis=0).astype(np.float32)
 
 
 # check the text for toxicity
@@ -88,7 +88,7 @@ def check_is_toxic(text: str) -> bool:
         y = float(probability_of_toxicity) > config.message_toxicity_threshold
     else:
         x = get_text_embedding(tokenized_data, navec_model)
-        y = model.predict(x.astype(int))
+        y = model.predict(x)
         y = bool(y)
 
     return y
@@ -440,4 +440,4 @@ def moderate(message: Message):
     save_data(data, 'users.json')
 
 
-bot.polling(none_stop=False)
+bot.infinity_polling(timeout=15)
