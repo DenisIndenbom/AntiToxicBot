@@ -1,6 +1,8 @@
 import telegramBotAPIToken
 import sentryToken
 
+path_to_json = 'users.json'
+
 user_toxicity_threshold = -5
 
 message_toxicity_threshold = 0.7
