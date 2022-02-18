@@ -208,7 +208,7 @@ def reset_chat(message: Message) -> None:
         return
 
     data.pop(chat_id)
-    send_message(bot, message.chat.id, 'Чат пересоздан!')
+    send_message(bot, message.chat.id, 'Статистика чата сброшена!')
     data = add_chat(chat_id, data)
 
     save_data(data, config.path_to_json)
