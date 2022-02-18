@@ -176,9 +176,13 @@ def start(message: Message) -> None:
 
 @bot.message_handler(commands=['help'])
 def help(message: Message) -> None:
-    with open('help.txt', 'r', encoding='utf-8-sig') as file:
-        help_text = file.read()
-    send_message(bot, message.chat.id, help_text)
+    try:
+        with open(config.path_to_help, 'r', encoding='utf-8-sig') as file:
+            help_text = file.read()
+        send_message(bot, message.chat.id, help_text)
+    except FileNotFoundError as e:
+        sentry_sdk.capture_exception(e)
+        print(f'File {config.path_to_help} not found!')
 
 
 @bot.message_handler(commands=['github'])

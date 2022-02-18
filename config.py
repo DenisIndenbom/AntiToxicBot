@@ -5,6 +5,7 @@ path_to_work_dir = ''
 
 path_to_json = 'users.json'
 path_to_reports = 'reports.txt'
+path_to_help = 'help.txt'
 
 user_toxicity_threshold = -5
 
