@@ -193,7 +193,7 @@ def github(message: Message) -> None:
 @bot.message_handler(commands=['habr'])
 def github(message: Message) -> None:
     send_message(bot, message.chat.id, 'Первая статья на хабре - https://habr.com/ru/post/582130/ \n'
-                                       'Первая статья на хабре - https://habr.com/ru/post/652447/')
+                                       'Вторая статья на хабре - https://habr.com/ru/post/652447/')
 
 
 @bot.message_handler(commands=['reset_chat'])
