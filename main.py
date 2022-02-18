@@ -198,7 +198,7 @@ def reset_chat(message: Message) -> None:
 
     chat_id = str(message.chat.id)
 
-    data = load_data(config.path_to_json)
+    data = load_data(config.path_to_work_dir + config.path_to_json)
 
     if chat_id not in data:
         return
@@ -211,7 +211,7 @@ def reset_chat(message: Message) -> None:
     send_message(bot, message.chat.id, 'Статистика чата сброшена!')
     data = add_chat(chat_id, data)
 
-    save_data(data, config.path_to_json)
+    save_data(data, config.path_to_work_dir + config.path_to_json)
 
 
 @bot.message_handler(commands=['set_ban_mode'])
@@ -222,7 +222,7 @@ def set_ban_mode(message: Message) -> None:
 
     chat_id = str(message.chat.id)
 
-    data = load_data(config.path_to_json)
+    data = load_data(config.path_to_work_dir + config.path_to_json)
 
     if chat_id not in data:
         data = add_chat(chat_id, data)
@@ -248,7 +248,7 @@ def set_ban_mode(message: Message) -> None:
 
     send_message(bot, message.chat.id, f'ban_mode {int(ban_mode)}')
 
-    save_data(data, config.path_to_json)
+    save_data(data, config.path_to_work_dir + config.path_to_json)
 
 
 @bot.message_handler(commands=['get_statistics'])
@@ -259,7 +259,7 @@ def get_statistics(message: Message):
 
     chat_id = str(message.chat.id)
 
-    data = load_data(config.path_to_json)
+    data = load_data(config.path_to_work_dir + config.path_to_json)
 
     if chat_id not in data:
         send_message(bot, message.chat.id, 'Статистики пока нет')
@@ -312,7 +312,7 @@ def get_toxics(message: Message):
         return
     chat_id = str(message.chat.id)
 
-    data = load_data(config.path_to_json)
+    data = load_data(config.path_to_work_dir + config.path_to_json)
 
     if chat_id not in data:
         send_message(bot, message.chat.id, 'Токсиков нет')
@@ -360,7 +360,7 @@ def feedback(message: Message):
 
     feedback_text = split_text[1:][0]
 
-    with open('reports.txt', 'a', encoding='utf-8-sig') as file:
+    with open(config.path_to_work_dir + config.path_to_reports, 'a', encoding='utf-8-sig') as file:
         username = message.from_user.username
         username = username if username is not None else message.from_user.last_name + ' ' + message.from_user.first_name
 
@@ -379,7 +379,7 @@ def moderate(message: Message):
     user: User = message.from_user
 
     # load users data
-    data = load_data(config.path_to_json)
+    data = load_data(config.path_to_work_dir + config.path_to_json)
 
     if chat_id not in data:
         data = add_chat(chat_id, data)
@@ -432,7 +432,7 @@ def moderate(message: Message):
         data[chat_id]['is_toxic'][user_index] = False
 
     # save user data
-    save_data(data, config.path_to_json)
+    save_data(data, config.path_to_work_dir + config.path_to_json)
 
 
 bot.infinity_polling(timeout=15)
