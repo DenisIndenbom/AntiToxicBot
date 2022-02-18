@@ -89,21 +89,6 @@ def check_is_toxic(text: str) -> bool:
     return y
 
 
-# check the message is not from the group
-def check_the_message_is_not_from_the_group(message: Message) -> bool:
-    if message.chat.type != 'group' and message.chat.type != 'supergroup':
-        return True
-    return False
-
-
-# check that the user is the admin of the group
-def check_is_admin(user_id: int, chat_id: int) -> bool:
-    for admin in bot.get_chat_administrators(chat_id):
-        if admin.user.id == user_id:
-            return True
-    return False
-
-
 # load data from json
 def load_data(path: str) -> dict:
     data = None
@@ -157,6 +142,21 @@ def delete_user(user_index: int, chat_id: str, data) -> dict:
     data[chat_id]['is_toxic'].pop(user_index)
     # return data
     return data
+
+
+# check the message is not from the group
+def check_the_message_is_not_from_the_group(message: Message) -> bool:
+    if message.chat.type != 'group' and message.chat.type != 'supergroup':
+        return True
+    return False
+
+
+# check that the user is the admin of the group
+def check_is_admin(user_id: int, chat_id: int) -> bool:
+    for admin in bot.get_chat_administrators(chat_id):
+        if admin.user.id == user_id:
+            return True
+    return False
 
 
 def send_message(client, recipient_id, msg_text):
