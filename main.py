@@ -199,6 +199,7 @@ def github(message: Message) -> None:
 @bot.message_handler(commands=['reset_chat'])
 def reset_chat(message: Message) -> None:
     if check_the_message_is_not_from_the_group(message):
+        send_message(bot, message.chat.id, 'Эта команда работает только в группах')
         return
 
     chat_id = str(message.chat.id)
