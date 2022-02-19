@@ -6,7 +6,7 @@ from telebot.types import Message, User
 from nltk.tokenize import WordPunctTokenizer
 from navec import Navec
 
-from textTonalityClassifier import TextClassifierNN, CBClassifier
+from textTonalityClassifier import TextTonalityClassifierNN, CBClassifier
 
 from torch import load as load_nn
 from torch import device as torch_device
@@ -29,7 +29,7 @@ navec_model = Navec.load('navec_hudlit_v1_12B_500K_300d_100q.tar')
 tokenizer = WordPunctTokenizer()
 
 if config.NN_mode:
-    model = TextClassifierNN(300, 512, 256, 2, navec_model)
+    model = TextTonalityClassifierNN(300, 512, 256, 2, navec_model)
     model.load_state_dict(load_nn('TextTonalityClassifier.nn', map_location=torch_device('cpu')))
     model.eval()
     device = torch_device('cuda:0' if config.GPU_mode and cuda.is_available() else 'cpu')

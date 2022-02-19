@@ -71,7 +71,7 @@ class CBClassifier:
         return x
 
 
-class TextClassifierNN(nn.Module):
+class TextTonalityClassifierNN(nn.Module):
     """
         Neural network model for the classification of text tonality
     """
@@ -83,7 +83,7 @@ class TextClassifierNN(nn.Module):
         :param output_size: output size
         :param navec: navec model
         """
-        super(TextClassifierNN, self).__init__()
+        super(TextTonalityClassifierNN, self).__init__()
 
         self.relu = nn.ReLU()
 
