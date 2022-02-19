@@ -2,7 +2,7 @@ import json
 
 if input('Ты правда хочешь пересоздать дату? (y/n)\n').lower() == 'y':
     data = {
-        'chat_id_example':{'user_id':[],'rating':[],'toxic':[],'positive':[],'is_toxic':[],'ban_mode': False}
+        'chat_id_example':{'users':{'user_id_example':{'rating': 0, 'toxic': 0, 'positive': 0, 'is_toxic': False}}, 'ban_mode': False}
     }
 
     with open('users.json', 'w') as file:

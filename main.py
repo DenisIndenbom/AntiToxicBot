@@ -17,10 +17,11 @@ import numpy as np
 
 import json
 import copy
+import re
 
 import sentry_sdk
 
-sentry_sdk.init(config.sentryToken, traces_sample_rate=0.35)
+# sentry_sdk.init(config.sentryToken, traces_sample_rate=0.35)
 
 bot = telebot.TeleBot(token=config.telegram_token, threaded=False)
 
@@ -71,7 +72,12 @@ def get_text_embedding(words, word_model) -> np.array:
 
 # check the text for toxicity
 def check_is_toxic(text: str) -> bool:
-    tokenized_data = tokenizer.tokenize(text.lower())
+    text = re.sub('[^a-zа-я]', ' ', text.lower())
+
+    tokenized_data = tokenizer.tokenize(text)
+
+    if len(tokenized_data) == 0:
+        return False
 
     if config.NN_mode:
         x = get_text_indexes(tokenized_data, navec_model)
@@ -111,36 +117,99 @@ def save_data(data: dict, path: str) -> None:
 
 
 # add chat to data
-def add_chat(chat_id: str, data: dict) -> dict:
-    chat_id = str(chat_id)
-
+def add_chat(data: dict, chat_id: str) -> dict:
     data[chat_id] = copy.deepcopy(data['chat_id_example'])
-    data[chat_id]['ban_mode'] = False
+    data[chat_id]['users'].pop('user_id_example')
+
+    return data
+
+
+# delete chat
+def delete_chat(data: dict, chat_id: str) -> dict:
+    data.pop(chat_id)
+
+    return data
+
+
+# return true if chat exist else false
+def chat_exists(data: dict, chat_id: str) -> bool:
+    return chat_id in data
+
+
+# get all members of chat
+def get_chat_users(data: dict, chat_id: str):
+    return data[chat_id]['users']
+
+
+# get chat ban mode
+def get_chat_ban_mode(data: dict, chat_id: str) -> bool:
+    return data[chat_id]['ban_mode']
+
+
+# set chat ban mode
+def set_chat_ban_mode(data: dict, chat_id: str, mode: bool) -> dict:
+    data[chat_id]['ban_mode'] = mode
 
     return data
 
 
 # create user in the data
-def create_user(user_id: int, chat_id: str, data) -> dict:
+def create_user(data: dict, chat_id: str, user_id: str) -> dict:
     # create user
-    data[chat_id]['user_id'].append(user_id)
-    data[chat_id]['rating'].append(0)
-    data[chat_id]['toxic'].append(0)
-    data[chat_id]['positive'].append(0)
-    data[chat_id]['is_toxic'].append(False)
+    data[chat_id]['users'][user_id] = copy.deepcopy(data['chat_id_example']['users']['user_id_example'])
     # return data
     return data
 
 
 # delete user from the data
-def delete_user(user_index: int, chat_id: str, data) -> dict:
+def delete_user(data: dict, chat_id: str, user_id: str) -> dict:
     # delete user
-    data[chat_id]['user_id'].pop(user_index)
-    data[chat_id]['rating'].pop(user_index)
-    data[chat_id]['toxic'].pop(user_index)
-    data[chat_id]['positive'].pop(user_index)
-    data[chat_id]['is_toxic'].pop(user_index)
+    data[chat_id]['users'].pop(user_id)
     # return data
+    return data
+
+
+# return true if user exist else false
+def user_exists(data: dict, chat_id: str, user_id: str) -> bool:
+    return user_id in data[chat_id]['users']
+
+
+# get user rating in chat
+def get_user_rating(data: dict, chat_id: str, user_id: str) -> float:
+    return data[chat_id]['users'][user_id]['rating']
+
+
+# get user num of toxic messages in chat
+def get_user_toxic(data: dict, chat_id: str, user_id: str) -> float:
+    return data[chat_id]['users'][user_id]['toxic']
+
+
+# get user num of positive messages in chat
+def get_user_positive(data: dict, chat_id: str, user_id: str) -> float:
+    return data[chat_id]['users'][user_id]['positive']
+
+
+# get user toxic state
+def get_user_toxic_state(data: dict, chat_id: str, user_id: str) -> bool:
+    return data[chat_id]['users'][user_id]['is_toxic']
+
+
+# change user rating
+def change_user_rating(data: dict, chat_id: str, user_id: str, is_toxic: bool) -> dict:
+    if is_toxic:
+        data[chat_id]['users'][user_id]['rating'] -= config.fine_for_toxic
+        data[chat_id]['users'][user_id]['toxic'] += 1
+    else:
+        data[chat_id]['users'][user_id]['rating'] += config.reward_for_positive
+        data[chat_id]['users'][user_id]['positive'] += 1
+
+    return data
+
+
+# set user toxic or not toxic
+def set_user_toxic_status(data: dict, chat_id: str, user_id: str, is_toxic: bool) -> dict:
+    data[chat_id]['users'][user_id]['is_toxic'] = is_toxic
+
     return data
 
 
@@ -159,6 +228,7 @@ def check_is_admin(user_id: int, chat_id: int) -> bool:
     return False
 
 
+# send message
 def send_message(client, recipient_id, msg_text):
     try:
         client.send_message(recipient_id, msg_text)
@@ -191,7 +261,7 @@ def github(message: Message) -> None:
 
 
 @bot.message_handler(commands=['habr'])
-def github(message: Message) -> None:
+def habr(message: Message) -> None:
     send_message(bot, message.chat.id, 'Первая статья на хабре - https://habr.com/ru/post/582130/ \n'
                                        'Вторая статья на хабре - https://habr.com/ru/post/652447/')
 
@@ -206,16 +276,16 @@ def reset_chat(message: Message) -> None:
 
     data = load_data(config.path_to_work_dir + config.path_to_json)
 
-    if chat_id not in data:
+    if not chat_exists(data, chat_id):
         return
 
     if not check_is_admin(message.from_user.id, message.chat.id):
         send_message(bot, message.chat.id, f'@{message.from_user.username} вы не админ!')
         return
 
-    data.pop(chat_id)
+    data = delete_chat(data, chat_id)
     send_message(bot, message.chat.id, 'Статистика чата сброшена!')
-    data = add_chat(chat_id, data)
+    data = add_chat(data, chat_id)
 
     save_data(data, config.path_to_work_dir + config.path_to_json)
 
@@ -230,8 +300,8 @@ def set_ban_mode(message: Message) -> None:
 
     data = load_data(config.path_to_work_dir + config.path_to_json)
 
-    if chat_id not in data:
-        data = add_chat(chat_id, data)
+    if not chat_exists(data, chat_id):
+        data = add_chat(data, chat_id)
 
     if not check_is_admin(message.from_user.id, message.chat.id):
         send_message(bot, message.chat.id, f'@{message.from_user.username} вы не админ!')
@@ -250,7 +320,7 @@ def set_ban_mode(message: Message) -> None:
                      f'Ошибка: Не правильно задан аргумент. Это должно быть число 0 или 1, а не "{arg}"')
         return
 
-    data[chat_id]['ban_mode'] = ban_mode
+    data = set_chat_ban_mode(data, chat_id, ban_mode)
 
     send_message(bot, message.chat.id, f'ban_mode {int(ban_mode)}')
 
@@ -267,20 +337,21 @@ def get_statistics(message: Message):
 
     data = load_data(config.path_to_work_dir + config.path_to_json)
 
-    if chat_id not in data:
+    if not chat_exists(data, chat_id):
         send_message(bot, message.chat.id, 'Статистики пока нет')
         return
 
     users_stat = []
-    for i in range(len(data[chat_id]['user_id'])):
+    for user_id in get_chat_users(data, chat_id):
         try:
-            user = bot.get_chat_member(message.chat.id, data[chat_id]['user_id'][i]).user
+            user = bot.get_chat_member(message.chat.id, int(user_id)).user
             username = user.username if user.username is not None \
                 else user.last_name + ' ' + user.first_name
 
             users_stat.append([username,
-                               'rating ' + str(data[chat_id]['rating'][i]), 'toxic ' + str(data[chat_id]['toxic'][i]),
-                               'positive ' + str(data[chat_id]['positive'][i])])
+                               'rating ' + str(get_user_rating(data, chat_id, user_id)),
+                               'toxic ' + str(get_user_toxic(data, chat_id, user_id)),
+                               'positive ' + str(get_user_positive(data, chat_id, user_id))])
         except Exception:
             pass
 
@@ -316,6 +387,7 @@ def get_toxics(message: Message):
     if check_the_message_is_not_from_the_group(message):
         send_message(bot, message.chat.id, 'Эта команда работает только в группах')
         return
+
     chat_id = str(message.chat.id)
 
     data = load_data(config.path_to_work_dir + config.path_to_json)
@@ -326,11 +398,12 @@ def get_toxics(message: Message):
 
     toxics = ''
 
-    for i in range(len(data[chat_id]['user_id'])):
-        if data[chat_id]['is_toxic'][i]:
+    for user_id in get_chat_users(data, chat_id):
+        if get_user_toxic_state(data, chat_id, user_id):
             try:
+                # get user
+                user = bot.get_chat_member(message.chat.id, int(user_id)).user
                 # get username
-                user = bot.get_chat_member(message.chat.id, data[chat_id]['user_id'][i]).user
                 username = '@' + user.username if user.username is not None \
                     else user.last_name + ' ' + user.first_name
 
@@ -346,7 +419,7 @@ def get_toxics(message: Message):
     if len(toxics_list) < 10:
         send_message(bot, message.chat.id, toxics)
     else:
-        send_message(bot, message.chat.id, 'Статистика:')
+        send_message(bot, message.chat.id, 'Список токсиков:')
 
         step = 10
 
@@ -383,42 +456,29 @@ def moderate(message: Message):
     chat_id = str(message.chat.id)
     # get user
     user: User = message.from_user
+    # get user id
+    user_id = str(user.id)
 
     # load users data
     data = load_data(config.path_to_work_dir + config.path_to_json)
 
-    if chat_id not in data:
-        data = add_chat(chat_id, data)
+    if not chat_exists(data, chat_id):
+        data = add_chat(data, chat_id)
 
-    # find user in data
-    user_index = -1
-    if user.id in data[chat_id]['user_id']:
-        for i, user_id in enumerate(data[chat_id]['user_id']):
-            if user.id == user_id:
-                user_index = i
-                break
-    else:
-        # create user in data
-        data = create_user(user.id, chat_id, data)
-        user_index = len(data[chat_id]['user_id']) - 1
+    if not user_exists(data, chat_id, user_id):
+        data = create_user(data, chat_id, user_id)
 
     # check the user for toxicity and change rating
-    if check_is_toxic(message.text):
-        data[chat_id]['rating'][user_index] -= config.fine_for_toxic
-        data[chat_id]['toxic'][user_index] += 1
-    else:
-        data[chat_id]['rating'][user_index] += config.reward_for_positive
-        data[chat_id]['positive'][user_index] += 1
+    data = change_user_rating(data, chat_id, user_id, check_is_toxic(message.text))
 
     # check that the rating has not exceeded the threshold
-    if data[chat_id]['rating'][user_index] < config.user_toxicity_threshold and not data[chat_id]['is_toxic'][
-        user_index]:
+    if get_user_rating(data, chat_id, user_id) < config.user_toxicity_threshold and not \
+            get_user_toxic_state(data, chat_id, user_id):
         waring_text = 'очень токсичен. \nЧтобы узнать список токсичных людей, пропишите в чате /get_toxics'
-        if data[chat_id]['ban_mode']:
-            # ban toxic user
-            waring_text = 'был забанен за токсичность'
 
-            data = delete_user(user_index, chat_id, data)
+        if get_chat_ban_mode(data, chat_id):
+            # ban toxic user
+            ban_is_successful = True
 
             try:
                 bot.kick_chat_member(message.chat.id, user.id)
@@ -426,16 +486,26 @@ def moderate(message: Message):
             except Exception:
                 send_message(bot, message.chat.id,
                              f'Я не могу банить пользователей. Дайте мне админ права или пропишите /set_ban_mode 0')
+                ban_is_successful = False
+
+            if ban_is_successful:
+                data = delete_user(data, chat_id, user_id)
+            else:
+                data = set_user_toxic_status(data, chat_id, user_id, True)
+
+            waring_text = 'был забанен за токсичность' if ban_is_successful else waring_text + '\n\nЯ не могу забанить пользователя. ' \
+                                                                                               'Дайте админ права или пропишите команду /set_ban_mode 0 в чат'
         else:
             # set that the user is toxic
-            data[chat_id]['is_toxic'][user_index] = True
+            data = set_user_toxic_status(data, chat_id, user_id, True)
 
         for admin_id in bot.get_chat_administrators(message.chat.id):
             send_message(bot, admin_id.user.id, f'Warning: Пользователь @{user.username} {waring_text}')
 
-    elif data[chat_id]['rating'][user_index] > config.user_toxicity_threshold and data[chat_id]['is_toxic'][user_index]:
+    elif get_user_rating(data, chat_id, user_id) > config.user_toxicity_threshold \
+            and get_user_toxic_state(data, chat_id, user_id):
         # set that the user is not toxic
-        data[chat_id]['is_toxic'][user_index] = False
+        data = set_user_toxic_status(data, chat_id, user_id, False)
 
     # save user data
     save_data(data, config.path_to_work_dir + config.path_to_json)
