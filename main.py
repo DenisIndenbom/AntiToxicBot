@@ -360,7 +360,7 @@ def get_statistics(message: Message):
         buf = ''
 
         for item in row:
-            buf += str(item) + '|'
+            buf += str(item) + ' | '
 
         buf += '\n'
         statistics += buf
