@@ -1,4 +1,4 @@
-import config
+from user_data_worker import *
 
 import telebot
 from telebot.types import Message, User
@@ -16,8 +16,6 @@ from torch import no_grad
 import numpy as np
 
 import re
-
-from user_data_worker import *
 
 import sentry_sdk
 
