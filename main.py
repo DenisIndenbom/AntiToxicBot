@@ -1,4 +1,6 @@
-from user_data_worker import *
+import config
+
+from user_data_worker import UserDataWorker
 
 import telebot
 from telebot.types import Message, User
@@ -21,7 +23,9 @@ import sentry_sdk
 
 sentry_sdk.init(config.sentryToken, traces_sample_rate=0.35)
 
-bot = telebot.TeleBot(token=config.telegram_token, threaded=False)
+bot = telebot.TeleBot(token=config.telegram_token, threaded=True)
+
+data_worker = UserDataWorker(config.path_to_work_dir + config.path_to_json)
 
 navec_model = Navec.load('navec_hudlit_v1_12B_500K_300d_100q.tar')
 
@@ -35,7 +39,6 @@ if config.NN_mode:
     model.to(device)
 else:
     model = CBClassifier('TextTonalityClassifierCatBoost.model')
-
 
 def get_text_indexes(words, word_model) -> np.array:
     indexes = []
@@ -91,9 +94,6 @@ def check_is_toxic(text: str) -> bool:
         y = bool(y)
 
     return y
-
-
-
 
 
 # check the message is not from the group
@@ -157,20 +157,18 @@ def reset_chat(message: Message) -> None:
 
     chat_id = str(message.chat.id)
 
-    data = load_data(config.path_to_work_dir + config.path_to_json)
-
-    if not chat_exists(data, chat_id):
+    if not data_worker.chat_exists(chat_id):
         return
 
     if not check_is_admin(message.from_user.id, message.chat.id):
         send_message(bot, message.chat.id, f'@{message.from_user.username} вы не админ!')
         return
 
-    data = delete_chat(data, chat_id)
+    data_worker.delete_chat(chat_id)
     send_message(bot, message.chat.id, 'Статистика чата сброшена!')
-    data = add_chat(data, chat_id)
+    data_worker.add_chat(chat_id)
 
-    save_data(data, config.path_to_work_dir + config.path_to_json)
+    data_worker.save_data(config.path_to_work_dir + config.path_to_json)
 
 
 @bot.message_handler(commands=['set_ban_mode'])
@@ -181,10 +179,8 @@ def set_ban_mode(message: Message) -> None:
 
     chat_id = str(message.chat.id)
 
-    data = load_data(config.path_to_work_dir + config.path_to_json)
-
-    if not chat_exists(data, chat_id):
-        data = add_chat(data, chat_id)
+    if not data_worker.chat_exists(chat_id):
+        data_worker.add_chat(chat_id)
 
     if not check_is_admin(message.from_user.id, message.chat.id):
         send_message(bot, message.chat.id, f'@{message.from_user.username} вы не админ!')
@@ -203,11 +199,11 @@ def set_ban_mode(message: Message) -> None:
                      f'Ошибка: Не правильно задан аргумент. Это должно быть число 0 или 1, а не "{arg}"')
         return
 
-    data = set_chat_ban_mode(data, chat_id, ban_mode)
+    data_worker.set_chat_ban_mode(chat_id, ban_mode)
 
     send_message(bot, message.chat.id, f'ban_mode {int(ban_mode)}')
 
-    save_data(data, config.path_to_work_dir + config.path_to_json)
+    data_worker.save_data(config.path_to_work_dir + config.path_to_json)
 
 
 @bot.message_handler(commands=['get_statistics'])
@@ -218,23 +214,22 @@ def get_statistics(message: Message):
 
     chat_id = str(message.chat.id)
 
-    data = load_data(config.path_to_work_dir + config.path_to_json)
-
-    if not chat_exists(data, chat_id):
+    if not data_worker.chat_exists(chat_id):
         send_message(bot, message.chat.id, 'Статистики пока нет')
         return
 
     users_stat = []
-    for user_id in get_chat_users(data, chat_id):
+
+    for user_id in data_worker.get_chat_users(chat_id):
         try:
             user = bot.get_chat_member(message.chat.id, int(user_id)).user
             username = user.username if user.username is not None \
                 else user.last_name + ' ' + user.first_name
 
             users_stat.append([username,
-                               'rating ' + str(get_user_rating(data, chat_id, user_id)),
-                               'toxic ' + str(get_user_toxic(data, chat_id, user_id)),
-                               'positive ' + str(get_user_positive(data, chat_id, user_id))])
+                               'rating ' + str(data_worker.get_user_rating(chat_id, user_id)),
+                               'toxic ' + str(data_worker.get_user_toxic(chat_id, user_id)),
+                               'positive ' + str(data_worker.get_user_positive(chat_id, user_id))])
         except Exception:
             pass
 
@@ -273,16 +268,14 @@ def get_toxics(message: Message):
 
     chat_id = str(message.chat.id)
 
-    data = load_data(config.path_to_work_dir + config.path_to_json)
-
-    if chat_id not in data:
+    if chat_id not in data_worker.data:
         send_message(bot, message.chat.id, 'Токсиков нет')
         return
 
     toxics = ''
 
-    for user_id in get_chat_users(data, chat_id):
-        if get_user_toxic_state(data, chat_id, user_id):
+    for user_id in data_worker.get_chat_users(chat_id):
+        if data_worker.get_user_toxic_state(chat_id, user_id):
             try:
                 # get user
                 user = bot.get_chat_member(message.chat.id, int(user_id)).user
@@ -342,24 +335,21 @@ def moderate(message: Message):
     # get user id
     user_id = str(user.id)
 
-    # load users data
-    data = load_data(config.path_to_work_dir + config.path_to_json)
+    if not data_worker.chat_exists(chat_id):
+        data_worker.add_chat(chat_id)
 
-    if not chat_exists(data, chat_id):
-        data = add_chat(data, chat_id)
-
-    if not user_exists(data, chat_id, user_id):
-        data = create_user(data, chat_id, user_id)
+    if not data_worker.user_exists(chat_id, user_id):
+        data_worker.create_user(chat_id, user_id)
 
     # check the user for toxicity and change rating
-    data = change_user_rating(data, chat_id, user_id, check_is_toxic(message.text))
+    data_worker.change_user_rating(chat_id, user_id, check_is_toxic(message.text))
 
     # check that the rating has not exceeded the threshold
-    if get_user_rating(data, chat_id, user_id) < config.user_toxicity_threshold and not \
-            get_user_toxic_state(data, chat_id, user_id):
+    if data_worker.get_user_rating(chat_id, user_id) < config.user_toxicity_threshold and not \
+            data_worker.get_user_toxic_state(chat_id, user_id):
         waring_text = 'очень токсичен. \nЧтобы узнать список токсичных людей, пропишите в чате /get_toxics'
 
-        if get_chat_ban_mode(data, chat_id):
+        if data_worker.get_chat_ban_mode(chat_id):
             # ban toxic user
             ban_is_successful = True
 
@@ -372,26 +362,26 @@ def moderate(message: Message):
                 ban_is_successful = False
 
             if ban_is_successful:
-                data = delete_user(data, chat_id, user_id)
+                data_worker.delete_user(chat_id, user_id)
             else:
-                data = set_user_toxic_status(data, chat_id, user_id, True)
+                data_worker.set_user_toxic_status(chat_id, user_id, True)
 
             waring_text = 'был забанен за токсичность' if ban_is_successful else waring_text + '\n\nЯ не могу забанить пользователя. ' \
                                                                                                'Дайте админ права или пропишите команду /set_ban_mode 0 в чат'
         else:
             # set that the user is toxic
-            data = set_user_toxic_status(data, chat_id, user_id, True)
+            data_worker.set_user_toxic_status(chat_id, user_id, True)
 
         for admin_id in bot.get_chat_administrators(message.chat.id):
             send_message(bot, admin_id.user.id, f'Warning: Пользователь @{user.username} {waring_text}')
 
-    elif get_user_rating(data, chat_id, user_id) > config.user_toxicity_threshold \
-            and get_user_toxic_state(data, chat_id, user_id):
+    elif data_worker.get_user_rating(chat_id, user_id) > config.user_toxicity_threshold and \
+            data_worker.get_user_toxic_state(chat_id, user_id):
         # set that the user is not toxic
-        data = set_user_toxic_status(data, chat_id, user_id, False)
+        data_worker.set_user_toxic_status(chat_id, user_id, False)
 
     # save user data
-    save_data(data, config.path_to_work_dir + config.path_to_json)
+    data_worker.save_data(config.path_to_work_dir + config.path_to_json)
 
 
-bot.infinity_polling(timeout=15)
+bot.infinity_polling(timeout=60)
