@@ -2,6 +2,8 @@ import config
 
 import json
 import copy
+import time
+from datetime import datetime
 
 from threading import Lock
 
@@ -17,9 +19,10 @@ def lock(function):
 
 
 class UserDataWorker:
+    def __init__(self, path_to_work_dir, path_to_file):
+        self.data = self.load_data(path_to_work_dir + path_to_file)
 
-    def __init__(self, path):
-        self.data = self.load_data(path)
+        self.work_dir = path_to_work_dir
 
         self.lock = Lock()
 
@@ -48,7 +51,7 @@ class UserDataWorker:
         :param path: string
         :return: none
         """
-        with open(path, 'w') as file:
+        with open(self.work_dir + path, 'w') as file:
             file.write(json.dumps(self.data))
 
     @lock
@@ -219,3 +222,14 @@ class UserDataWorker:
         self.data[chat_id]['users'][user_id]['is_toxic'] = is_toxic
 
         return self.data
+
+    def make_backups(self, path: str, period: int = 30) -> None:
+        """
+        This function makes backups with a given gear ratio. Run in a separate process
+        :param path: string
+        :param period: int
+        :return: None
+        """
+        while True:
+            time.sleep(period * 60)
+            self.save_data(path + "backup-" + datetime.now().strftime('%d_%m_%y-%I_%M') + '.json')

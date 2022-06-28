@@ -8,7 +8,7 @@ from telebot.types import Message, User
 from nltk.tokenize import WordPunctTokenizer
 from navec import Navec
 
-from text_tonality_classifier import TextTonalityClassifierNN, CBClassifier
+from text_tonality_classifier import TextTonalityClassifierNN
 
 from torch import load as load_nn
 from torch import device as torch_device
@@ -18,27 +18,29 @@ from torch import no_grad
 import numpy as np
 
 import re
+import threading
 
 import sentry_sdk
 
 sentry_sdk.init(config.sentryToken, traces_sample_rate=0.35)
 
+# init telegram bot
 bot = telebot.TeleBot(token=config.telegram_token, threaded=True)
 
-data_worker = UserDataWorker(config.path_to_work_dir + config.path_to_json)
+# init data worker
+data_worker = UserDataWorker(config.path_to_work_dir, config.path_to_json)
 
+# init navec model
 navec_model = Navec.load('navec_hudlit_v1_12B_500K_300d_100q.tar')
-
 tokenizer = WordPunctTokenizer()
 
-if config.NN_mode:
-    model = TextTonalityClassifierNN(300, 512, 256, 2, navec_model)
-    model.load_state_dict(load_nn('TextTonalityClassifier.nn', map_location=torch_device('cpu')))
-    model.eval()
-    device = torch_device('cuda:0' if config.GPU_mode and cuda.is_available() else 'cpu')
-    model.to(device)
-else:
-    model = CBClassifier('TextTonalityClassifierCatBoost.model')
+# init model
+model = TextTonalityClassifierNN(300, 512, 256, 2, navec_model)
+model.load_state_dict(load_nn('TextTonalityClassifier.nn', map_location=torch_device('cpu')))
+model.eval()
+device = torch_device('cuda:0' if config.GPU_mode and cuda.is_available() else 'cpu')
+model.to(device)
+
 
 def get_text_indexes(words, word_model) -> np.array:
     indexes = []
@@ -52,25 +54,6 @@ def get_text_indexes(words, word_model) -> np.array:
     return np.array(indexes, dtype=np.int64)
 
 
-def add_zero_indexes(ind, max_text_ind_len) -> np.array:
-    if len(ind) < max_text_ind_len:
-        z_arr = np.zeros((max_text_ind_len - len(ind)), dtype=np.int64).T
-        ind = np.concatenate((ind, z_arr), axis=0)
-    return ind
-
-
-# get text embedding, simply averaging embeddings of words in it
-def get_text_embedding(words, word_model) -> np.array:
-    vec = []
-    for word in words:
-        try:
-            vec.append(word_model[word])
-        except KeyError:
-            vec.append(np.zeros(300))
-
-    return np.array(vec).mean(axis=0).astype(np.float32)
-
-
 # check the text for toxicity
 def check_is_toxic(text: str) -> bool:
     text = re.sub('[^a-zа-я]', ' ', text.lower())
@@ -80,18 +63,14 @@ def check_is_toxic(text: str) -> bool:
     if len(tokenized_data) == 0:
         return False
 
-    if config.NN_mode:
-        x = get_text_indexes(tokenized_data, navec_model)
-        with no_grad():
-            x = LongTensor(x).to(device)
-            x = x.unsqueeze(0)
-            probability_of_toxicity = model.predict(x)[0][1]  # we take the predicted probability of toxicity
+    x = get_text_indexes(tokenized_data, navec_model)
 
-        y = float(probability_of_toxicity) > config.message_toxicity_threshold
-    else:
-        x = get_text_embedding(tokenized_data, navec_model)
-        y = model.predict(x)
-        y = bool(y)
+    with no_grad():
+        x = LongTensor(x).to(device)
+        x = x.unsqueeze(0)
+        probability_of_toxicity = model.predict(x)[0][1]  # we take the predicted probability of toxicity
+
+    y = float(probability_of_toxicity) > config.message_toxicity_threshold
 
     return y
 
@@ -168,7 +147,7 @@ def reset_chat(message: Message) -> None:
     send_message(bot, message.chat.id, 'Статистика чата сброшена!')
     data_worker.add_chat(chat_id)
 
-    data_worker.save_data(config.path_to_work_dir + config.path_to_json)
+    data_worker.save_data(config.path_to_json)
 
 
 @bot.message_handler(commands=['set_ban_mode'])
@@ -203,7 +182,7 @@ def set_ban_mode(message: Message) -> None:
 
     send_message(bot, message.chat.id, f'ban_mode {int(ban_mode)}')
 
-    data_worker.save_data(config.path_to_work_dir + config.path_to_json)
+    data_worker.save_data(config.path_to_json)
 
 
 @bot.message_handler(commands=['get_statistics'])
@@ -381,7 +360,12 @@ def moderate(message: Message):
         data_worker.set_user_toxic_status(chat_id, user_id, False)
 
     # save user data
-    data_worker.save_data(config.path_to_work_dir + config.path_to_json)
+    data_worker.save_data(config.path_to_json)
 
+
+backup_thread = threading.Thread(target=data_worker.make_backups,
+                                 args=(config.path_to_backup_dir, config.periodic_backups))
+
+backup_thread.start()
 
 bot.infinity_polling(timeout=60)
