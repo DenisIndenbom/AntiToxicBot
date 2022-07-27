@@ -3,13 +3,11 @@ import re
 import numpy as np
 from fuzzywuzzy import process, fuzz
 
-from catboost import CatBoostClassifier
-
 from torch import nn, tensor
 from slovnet.model.emb import NavecEmbedding
 
 
-class RulesClassifier:
+class TextTonalityClassifierByRules:
     """
         Classifier of the tonality of the text according to the rules.
     """
@@ -44,7 +42,8 @@ class RulesClassifier:
                 if clear_word == '':
                     continue
 
-                if process.extractOne(clear_word, self.list_of_bad_words, scorer=fuzz.ratio)[1] > self.bad_word_threshold * 100:
+                if process.extractOne(clear_word, self.list_of_bad_words, scorer=fuzz.ratio)[1] \
+                        > self.bad_word_threshold * 100:
                     in_list = True
                     break
 
@@ -53,27 +52,11 @@ class RulesClassifier:
         return np.array(y)
 
 
-class CBClassifier:
-    def __init__(self, model_path: str) -> None:
-        """
-        :param model_path: path to catboost model
-        """
-        self.cb_clf = CatBoostClassifier()
-        self.cb_clf.load_model(model_path, format='cbm')
-
-    def predict(self, x) -> np.array:
-        """
-        :param x: input 1d array-like or 2d array-like.
-        :return: numpy array with predictions.
-        """
-        x = self.cb_clf.predict(x)
-        return x
-
-
 class TextTonalityClassifierNN(nn.Module):
     """
         Neural network model for the classification of text tonality
     """
+
     def __init__(self, embedding_dim: int, gru_hidden_size: int, fc_hidden_size: int, output_size: int, navec) -> None:
         """
         :param embedding_dim: embedding dim
@@ -86,12 +69,9 @@ class TextTonalityClassifierNN(nn.Module):
 
         self.relu = nn.ReLU()
 
-        self.softmax = nn.Softmax(dim=1)
+        self.softmax = nn.Softmax(dim=-1)
 
         self.embedding = NavecEmbedding(navec)  # nn.Embedding(input_size, embedding_dim)
-
-        #weights = FloatTensor(model.vectors)
-        #self.embedding = nn.Embedding.from_pretrained(weights)
 
         self.conv1 = nn.Conv1d(embedding_dim, 512, kernel_size=(5,), padding=2)
         self.conv2 = nn.Conv1d(512, 1024, kernel_size=(3,), padding=1)
@@ -122,7 +102,9 @@ class TextTonalityClassifierNN(nn.Module):
 
         x = x.permute((0, 2, 1))
 
-        x = self.gru(x)[0].mean(dim=1)  # (batch_size, L, hidden_size)
+        x, _ = self.gru(x)  # (batch_size, L, hidden_size)
+
+        x, _ = x.max(dim=1)
 
         x = self.fc1(x)
 

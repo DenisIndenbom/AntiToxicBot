@@ -2,27 +2,18 @@ import config
 
 from user_data_worker import UserDataWorker
 
+from utils import *
+
+from toxicity_classifier import NNClassifier
+
 import telebot
 from telebot.types import Message, User
 
-from nltk.tokenize import WordPunctTokenizer
-from navec import Navec
-
-from text_tonality_classifier import TextTonalityClassifierNN
-
-from torch import load as load_nn
-from torch import device as torch_device
-from torch import LongTensor, cuda
-from torch import no_grad
-
-import numpy as np
-
-import re
 import threading
 
 import sentry_sdk
 
-sentry_sdk.init(config.sentryToken, traces_sample_rate=0.35)
+# sentry_sdk.init(config.sentryToken, traces_sample_rate=0.35)
 
 # init telegram bot
 bot = telebot.TeleBot(token=config.telegram_token, threaded=True)
@@ -30,72 +21,11 @@ bot = telebot.TeleBot(token=config.telegram_token, threaded=True)
 # init data worker
 data_worker = UserDataWorker(config.path_to_work_dir, config.path_to_json)
 
-# init navec model
-navec_model = Navec.load('navec_hudlit_v1_12B_500K_300d_100q.tar')
-tokenizer = WordPunctTokenizer()
-
-# init model
-model = TextTonalityClassifierNN(300, 512, 256, 2, navec_model)
-model.load_state_dict(load_nn('TextTonalityClassifier.nn', map_location=torch_device('cpu')))
-model.eval()
-device = torch_device('cuda:0' if config.GPU_mode and cuda.is_available() else 'cpu')
-model.to(device)
-
-
-def get_text_indexes(words, word_model) -> np.array:
-    indexes = []
-
-    for word in words:
-        try:
-            indexes.append(word_model.vocab[word])
-        except KeyError:
-            indexes.append(0)
-
-    return np.array(indexes, dtype=np.int64)
-
-
-# check the text for toxicity
-def check_is_toxic(text: str) -> bool:
-    text = re.sub('[^a-zа-я]', ' ', text.lower())
-
-    tokenized_data = tokenizer.tokenize(text)
-
-    if len(tokenized_data) == 0:
-        return False
-
-    x = get_text_indexes(tokenized_data, navec_model)
-
-    with no_grad():
-        x = LongTensor(x).to(device)
-        x = x.unsqueeze(0)
-        probability_of_toxicity = model.predict(x)[0][1]  # we take the predicted probability of toxicity
-
-    y = float(probability_of_toxicity) > config.message_toxicity_threshold
-
-    return y
-
-
-# check the message is not from the group
-def check_the_message_is_not_from_the_group(message: Message) -> bool:
-    if message.chat.type != 'group' and message.chat.type != 'supergroup':
-        return True
-    return False
-
-
-# check that the user is the admin of the group
-def check_is_admin(user_id: int, chat_id: int) -> bool:
-    for admin in bot.get_chat_administrators(chat_id):
-        if admin.user.id == user_id:
-            return True
-    return False
-
-
-# send message
-def send_message(client, recipient_id, msg_text):
-    try:
-        client.send_message(recipient_id, msg_text)
-    except Exception:
-        pass
+# init toxicity classifier
+classifier = NNClassifier(gpu=config.GPU_mode,
+                          message_toxicity_threshold=config.message_toxicity_threshold,
+                          model_path=config.path_to_model,
+                          navec_path=config.path_to_navec)
 
 
 @bot.message_handler(commands=['start'])
@@ -124,8 +54,8 @@ def github(message: Message) -> None:
 
 @bot.message_handler(commands=['habr'])
 def habr(message: Message) -> None:
-    send_message(bot, message.chat.id, 'Первая статья на хабре - https://habr.com/ru/post/582130/ \n'
-                                       'Вторая статья на хабре - https://habr.com/ru/post/652447/')
+    send_message(bot, message.chat.id, 'Первая статья на Хабре - https://habr.com/ru/post/582130/ \n'
+                                       'Вторая статья на Хабре - https://habr.com/ru/post/652447/')
 
 
 @bot.message_handler(commands=['reset_chat'])
@@ -139,7 +69,7 @@ def reset_chat(message: Message) -> None:
     if not data_worker.chat_exists(chat_id):
         return
 
-    if not check_is_admin(message.from_user.id, message.chat.id):
+    if not check_is_admin(bot, message.from_user.id, message.chat.id):
         send_message(bot, message.chat.id, f'@{message.from_user.username} вы не админ!')
         return
 
@@ -161,7 +91,7 @@ def set_ban_mode(message: Message) -> None:
     if not data_worker.chat_exists(chat_id):
         data_worker.add_chat(chat_id)
 
-    if not check_is_admin(message.from_user.id, message.chat.id):
+    if not check_is_admin(bot, message.from_user.id, message.chat.id):
         send_message(bot, message.chat.id, f'@{message.from_user.username} вы не админ!')
         return
 
@@ -321,7 +251,7 @@ def moderate(message: Message):
         data_worker.create_user(chat_id, user_id)
 
     # check the user for toxicity and change rating
-    data_worker.change_user_rating(chat_id, user_id, check_is_toxic(message.text))
+    data_worker.change_user_rating(chat_id, user_id, classifier.check_is_toxic(message.text))
 
     # check that the rating has not exceeded the threshold
     if data_worker.get_user_rating(chat_id, user_id) < config.user_toxicity_threshold and not \
@@ -363,9 +293,7 @@ def moderate(message: Message):
     data_worker.save_data(config.path_to_json)
 
 
-backup_thread = threading.Thread(target=data_worker.make_backups,
-                                 args=(config.path_to_backup_dir, config.periodic_backups))
-
-backup_thread.start()
+threading.Thread(target=data_worker.make_backups,
+                 args=(config.path_to_backup_dir, config.periodic_backups)).start()
 
 bot.infinity_polling(timeout=60)
