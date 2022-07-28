@@ -9,7 +9,7 @@ path_to_help = 'help.txt'
 
 path_to_backup_dir = 'backups/'
 
-path_to_model = 'TextTonalityClassifier_old.nn'
+path_to_model = 'TextTonalityClassifier.nn'
 path_to_navec = 'navec_hudlit_v1_12B_500K_300d_100q.tar'
 
 periodic_backups = 30

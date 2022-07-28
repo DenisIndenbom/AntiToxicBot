@@ -24,7 +24,7 @@ class ToxicityClassifier(ABC):
 class RulesClassifier(ToxicityClassifier):
     def __init__(self, path_to_badwords: str, bad_word_threshold: int = 0.75):
         with open(path_to_badwords, 'r') as file:
-            badwords = file.read().split('\n')
+            badwords = file.read().split(' ')
 
         self.model = TextTonalityClassifierByRules(badwords, bad_word_threshold)
 
