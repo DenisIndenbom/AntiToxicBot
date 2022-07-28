@@ -13,7 +13,7 @@ import threading
 
 import sentry_sdk
 
-# sentry_sdk.init(config.sentryToken, traces_sample_rate=0.35)
+sentry_sdk.init(config.sentryToken, traces_sample_rate=0.35)
 
 # init telegram bot
 bot = telebot.TeleBot(token=config.telegram_token, threaded=True)
