@@ -7,6 +7,7 @@ from datetime import datetime
 
 from threading import Lock
 
+__all__ = ['UserDataWorker']
 
 def lock(function):
     def wrapper(self, *args, **kwargs):
