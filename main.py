@@ -4,7 +4,7 @@ from user_data_worker import UserDataWorker
 
 from utils import *
 
-from toxicity_classifier import NNClassifier
+from toxicity_detector import NNClassifier
 
 import telebot
 from telebot.types import Message, User
